@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+/* Colores y letras de Activa GYE (tomados de las capturas en docs/diseno/capturas). Usar estas clases, no colores sueltos:
+   bg-navy-900 / text-navy-900 (azul marino), bg-brand-orange (naranja), bg-brand-blue (azul botón), bg-surface (fondo claro). */
+@theme {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --color-navy-950: #0b1426;
+  --color-navy-900: #0f1b33;
+  --color-navy-800: #16243f;
+  --color-navy-700: #1f3050;
+  --color-brand-orange: #ff6b1a;
+  --color-brand-orange-dark: #e85a0c;
+  --color-brand-blue: #1e88ff;
+  --color-brand-blue-dark: #1570d6;
+  --color-sky-tag: #2f80ed;
+  --color-surface: #f6f8fb;
+  --color-demo: #fff4e5;
+  --radius-card: 1.75rem;
+}
+
+html { scroll-behavior: smooth; }
+body { @apply bg-surface font-sans text-navy-900 antialiased; }
+.eyebrow { @apply text-xs font-extrabold uppercase tracking-[0.25em] text-sky-tag; }
+.display { @apply font-extrabold tracking-tight leading-[0.95]; }
+:focus-visible { outline: 3px solid var(--color-brand-blue); outline-offset: 2px; }

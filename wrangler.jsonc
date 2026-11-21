@@ -1,0 +1,6 @@
+{
+  // Publicación gratis en Cloudflare Workers: solo archivos estáticos (dist/). Toda ruta sin archivo sirve index.html (React Router).
+  "name": "activa-gye",
+  "compatibility_date": "2026-11-01",
+  "assets": { "directory": "./dist", "not_found_handling": "single-page-application" }
+}
