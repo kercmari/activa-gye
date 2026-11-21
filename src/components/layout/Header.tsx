@@ -97,7 +97,7 @@ export function Header() {
     <header className="sticky top-0 z-40 bg-navy-900 text-white shadow-lg shadow-navy-900/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Activa GYE, ir al inicio">
-          <img src="/img/logo.png" alt="" className="h-11 w-auto rounded-lg bg-white p-0.5" />
+          <img src="/img/logo.png" alt="" className="h-11 w-auto" />
           <span className="text-xl font-extrabold italic tracking-tight">
             ACTIVA <span className="text-brand-blue">GYE</span>
           </span>

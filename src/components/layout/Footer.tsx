@@ -10,7 +10,7 @@ export function Footer() {
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Link to="/" className="flex items-center gap-3" aria-label="Activa GYE, ir al inicio">
-            <img src="/img/logo.png" alt="" className="h-11 w-auto rounded-lg bg-white p-0.5" />
+            <img src="/img/logo.png" alt="" className="h-11 w-auto" />
             <span className="text-xl font-extrabold italic tracking-tight">
               ACTIVA <span className="text-brand-blue">GYE</span>
             </span>

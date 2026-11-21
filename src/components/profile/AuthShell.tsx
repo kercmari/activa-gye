@@ -13,7 +13,7 @@ export default function AuthShell({ title, subtitle, children }: Props) {
     <section className="bg-navy-900 px-4 py-12 md:py-20">
       <div className="mx-auto w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center justify-center gap-3" aria-label="Activa GYE, ir al inicio">
-          <img src="/img/logo.png" alt="" className="h-12 w-auto rounded-lg bg-white p-0.5" />
+          <img src="/img/logo.png" alt="" className="h-12 w-auto" />
           <span className="text-2xl font-extrabold italic tracking-tight text-white">
             ACTIVA <span className="text-brand-blue">GYE</span>
           </span>
