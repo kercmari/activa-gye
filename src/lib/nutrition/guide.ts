@@ -128,7 +128,9 @@ export function buildBasicGuide(i: BasicGuideInput): NutritionGuide {
   const bmi = Math.round((i.weight_kg / (heightM * heightM)) * 10) / 10;
   const label = bmiLabel(bmi);
 
-  const kcal = basalMetabolism(i) * ACTIVITY_FACTOR[i.activity_level] * GOAL_KCAL_MULT[i.goal];
+  // R1: con IMC bajo no se aplica el déficit de bajar de peso.
+  const goalMult = bmi < 18.5 && i.goal === 'bajar_peso' ? 1 : GOAL_KCAL_MULT[i.goal];
+  const kcal = basalMetabolism(i) * ACTIVITY_FACTOR[i.activity_level] * goalMult;
   const floor = i.sex === 'femenino' ? 1200 : 1500;
   const dailyKcal = Math.round(Math.max(floor, kcal) / 50) * 50;
 
@@ -136,7 +138,9 @@ export function buildBasicGuide(i: BasicGuideInput): NutritionGuide {
   const fatG = Math.round((dailyKcal * 0.28) / 9);
   const carbsG = Math.max(0, Math.round((dailyKcal - proteinG * 4 - fatG * 9) / 4));
 
-  const hydration = `Bebe alrededor de ${decimal(i.weight_kg * 0.035)} litros de agua al día (más si entrenas o hace calor).`;
+  // R1: tope de 1,5–3,5 L; sin tope, 400 kg daba 14 L (riesgo de hiponatremia).
+  const litros = Math.min(3.5, Math.max(1.5, i.weight_kg * 0.035));
+  const hydration = `Bebe alrededor de ${decimal(litros)} litros de agua al día (más si entrenas o hace calor).`;
 
   const warnings: string[] = [];
   if (i.health_conditions && i.health_conditions.trim() !== '') {

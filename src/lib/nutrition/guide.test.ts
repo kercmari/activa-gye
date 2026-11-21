@@ -51,4 +51,30 @@ describe('buildBasicGuide', () => {
     expect(g.warnings).toContain('Por tu edad, sigue esta guía con acompañamiento de un adulto o profesional.');
     expect(g.hydration).toBe('Bebe alrededor de 2,1 litros de agua al día (más si entrenas o hace calor).');
   });
+
+  it('R1 hidratación: tope de 3,5 L con 400 kg', () => {
+    const g = buildBasicGuide({
+      age: 30, sex: 'masculino', height_cm: 180, weight_kg: 400,
+      activity_level: 'moderado', goal: 'mantener', restrictions: null, health_conditions: null,
+    });
+    expect(g.hydration).toBe('Bebe alrededor de 3,5 litros de agua al día (más si entrenas o hace calor).');
+  });
+
+  it('R1 hidratación: tope de 3,5 L también con 150 kg (5,3 L antes)', () => {
+    const g = buildBasicGuide({
+      age: 30, sex: 'masculino', height_cm: 180, weight_kg: 150,
+      activity_level: 'moderado', goal: 'mantener', restrictions: null, health_conditions: null,
+    });
+    expect(g.hydration).toContain('Bebe alrededor de 3,5 litros');
+  });
+
+  it('R1 IMC bajo: bajar_peso no aplica déficit (IMC < 18,5)', () => {
+    const g = buildBasicGuide({
+      age: 40, sex: 'masculino', height_cm: 170, weight_kg: 45,
+      activity_level: 'sedentario', goal: 'bajar_peso', restrictions: null, health_conditions: null,
+    });
+    expect(g.bmi_label).toBe('Bajo peso');
+    // Sin déficit: 1317,5 × 1,2 = 1581 → 1600 (antes salía 1350 con el 15 % de déficit)
+    expect(g.daily_kcal).toBe(1600);
+  });
 });

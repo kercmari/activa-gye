@@ -73,7 +73,7 @@ function requireRole(allowed: Role[], code: string, message: string): StoredUser
 }
 
 const requireStaff = () => requireRole(['nutricionista', 'admin'], 'SOLO_NUTRICIONISTA', 'Solo un nutricionista puede hacer esto.');
-const requireAdmin = () => requireRole(['admin'], 'SOLO_ADMIN', 'Solo un administrador puede hacer esto.');
+const requireAdmin = () => requireRole(['admin'], 'SOLO_ADMIN', 'Solo el administrador puede hacer esto.');
 
 function isStaff(role: Role): boolean {
   return role === 'nutricionista' || role === 'admin';
@@ -427,9 +427,12 @@ async function getNutritionRequest(id: string): Promise<NutritionRequest | null>
 async function getNutritionPhotoUrl(request: NutritionRequest): Promise<string | null> {
   await wait();
   const me = currentUser();
-  if (!me || !request.photo_path) return null;
-  if (request.user_id !== me.id && !isStaff(me.profile.role)) return null;
-  const photo = readTable<PhotoRow>('photos').find((p) => p.path === request.photo_path);
+  if (!me) return null;
+  // R1: no confiar en el objeto que llega; buscar la fila guardada por id.
+  const row = readTable<NutritionRequest>('nutrition_requests').find((r) => r.id === request.id);
+  if (!row || !row.photo_path) return null;
+  if (row.user_id !== me.id && !isStaff(me.profile.role)) return null;
+  const photo = readTable<PhotoRow>('photos').find((p) => p.path === row.photo_path);
   return photo?.data_url ?? null;
 }
 

@@ -17,7 +17,7 @@ interface SeedAccount {
 
 const SEED_ACCOUNTS: SeedAccount[] = [
   { id: 'seed-admin', email: 'admin@activagye.test', password: 'ActivaAdmin2026!', full_name: 'Administración Activa GYE', role: 'admin', birth_date: null, goal: null },
-  { id: 'seed-nutri', email: 'nutri@activagye.test', password: 'ActivaNutri2026!', full_name: 'Lcda. Nutrición Demo', role: 'nutricionista', birth_date: null, goal: null },
+  { id: 'seed-nutri', email: 'nutri@activagye.test', password: 'ActivaNutri2026!', full_name: 'Nutricionista de prueba', role: 'nutricionista', birth_date: null, goal: null },
   { id: 'seed-usuario', email: 'usuario@activagye.test', password: 'ActivaUser2026!', full_name: 'Usuario de prueba', role: 'usuario', birth_date: '2000-05-10', goal: 'bajar_peso' },
 ];
 
