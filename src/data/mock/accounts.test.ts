@@ -16,6 +16,10 @@ vi.mock('./catalog', () => {
   };
 });
 
+vi.mock('../../lib/image', () => ({
+  downscaleToDataUrl: async () => 'data:image/jpeg;base64,FOTO',
+}));
+
 const repo = accountsPart as Repo;
 const PLACE_IDS = ['p1', 'p2'];
 
@@ -210,5 +214,32 @@ describe('nutrición', () => {
     expect(users[0].role).toBe('nutricionista');
 
     await expectCode(repo.adminSetRole(admin.user.id, 'usuario'), 'NO_PUEDES_CAMBIAR_TU_ROL');
+  });
+});
+
+describe('revisión R1/R2: datos y cuenta', () => {
+  it('R1 foto: objeto falsificado con mi user_id y foto ajena no devuelve la foto', async () => {
+    await repo.signUp(signUpInput('dueña@example.com'));
+    const photo = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
+    const req = await repo.createNutritionRequest(nutritionInput({ photo, consent_photo: true }));
+    expect(await repo.getNutritionPhotoUrl(req)).toBe('data:image/jpeg;base64,FOTO');
+    await repo.signOut();
+
+    const intruso = await repo.signUp(signUpInput('intruso@example.com'));
+    const forged = { ...req, user_id: intruso.user.id };
+    expect(await repo.getNutritionPhotoUrl(forged)).toBeNull();
+  });
+
+  it('R1 admin: usuario normal ve el mensaje SOLO_ADMIN igual que el catálogo', async () => {
+    await repo.signUp(signUpInput('normal@example.com'));
+    const err = await repo.adminListUsers().then(() => null, (e: unknown) => e);
+    expect(err).toBeInstanceOf(AppError);
+    expect((err as AppError).code).toBe('SOLO_ADMIN');
+    expect((err as AppError).message).toBe('Solo el administrador puede hacer esto.');
+  });
+
+  it('R2 cuenta de nutricionista de prueba no se llama "Demo"', async () => {
+    const nutri = await repo.signIn('nutri@activagye.test', 'ActivaNutri2026!');
+    expect(nutri.profile.full_name).not.toMatch(/demo/i);
   });
 });

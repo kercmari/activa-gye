@@ -7,7 +7,7 @@ Estas cuentas sirven para el video y las capturas de la entrega.
 | Rol | Correo | Contraseña | Qué se ve |
 |---|---|---|---|
 | Admin | `admin@activagye.test` | `ActivaAdmin2026!` | Nombre "Administración Activa GYE". Panel de administración y cambio de roles de otras cuentas (no puede cambiar el suyo). |
-| Nutricionista | `nutri@activagye.test` | `ActivaNutri2026!` | Nombre "Lcda. Nutrición Demo". Panel de nutrición: puede tomar y responder solicitudes. |
+| Nutricionista | `nutri@activagye.test` | `ActivaNutri2026!` | Nombre "Nutricionista de prueba". Panel de nutrición: puede tomar y responder solicitudes. |
 | Usuario | `usuario@activagye.test` | `ActivaUser2026!` | Nombre "Usuario de prueba". Fecha de nacimiento 10/05/2000, objetivo "bajar de peso" y 4 registros de progreso de las últimas 4 semanas (peso de 78 kg a 76,5 kg). |
 
 Notas para el video:
