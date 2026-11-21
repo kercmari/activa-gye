@@ -7,6 +7,8 @@ export interface PlaceCardCompare {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** Texto cuando está deshabilitada (p. ej. "Máximo 3"). Por defecto "Comparar". */
+  disabledLabel?: string;
 }
 
 interface Props {
@@ -68,7 +70,7 @@ export default function PlaceCard({ place, sectorName, sportName, distanceKm, co
                 disabled={compare.disabled}
                 onChange={(e) => compare.onChange(e.target.checked)}
               />
-              Comparar
+              {compare.disabled && compare.disabledLabel ? compare.disabledLabel : 'Comparar'}
             </label>
           ) : null}
         </div>
