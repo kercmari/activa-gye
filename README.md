@@ -1,32 +1,145 @@
-# React + TypeScript + Vite
+# Activa GYE
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Página web para **encontrar dónde hacer deporte en Guayaquil**: gimnasios, canchas, piscinas, yoga, baile, boxeo y más. Proyecto de clase (Fase 5).
 
-Currently, two official plugins are available:
+- **Página publicada:** https://activa-gye.agentpulqora.workers.dev
+- **Código:** https://github.com/kercmari/activa-gye
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Estado actual (en palabras sencillas)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Parte | ¿Está hecha? | Detalle |
+|---|---|---|
+| **Frontend** (lo que ve el usuario) | ✅ Sí, completo y publicado | Todas las pantallas, botones y rutas funcionan. |
+| **Datos** | ✅ Simulados en el navegador | Cuentas, perfil, favoritos, progreso y solicitudes al nutricionista se guardan en el navegador de cada persona (`localStorage`). Si cambias de navegador o borras los datos, se pierden. |
+| **Lugares** | ✅ Reales | 300 lugares deportivos reales de Guayaquil tomados de **OpenStreetMap**. Precio y horario dicen «Consultar» cuando no hay dato confirmado. |
+| **Backend** (base de datos real) | 🟡 Diseñado, **todavía no conectado** | El esquema de la base de datos está escrito y probado en local (`supabase/migrations/`), pero la página publicada aún no lo usa. |
+| **IA del nutricionista** | 🟡 Pendiente | Hoy la guía es **básica y automática** (fórmula Mifflin-St Jeor, sin IA). La IA con foto (Groq) se conecta junto con el backend. |
 
-## Expanding the Oxlint configuration
+### ¿Hay conexión con Google para ver las ubicaciones?
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- **El mapa no es de Google:** es de **OpenStreetMap**, con la librería Leaflet. Es gratis y no necesita clave.
+- **El botón «Cómo llegar» sí abre Google Maps** con la ruta hasta el lugar (en el celular abre la app). Usa un enlace público de Google que **no necesita clave ni API**, así que es gratis y ya funciona.
+- **La API de Google Places no se usa:** pide tarjeta de crédito y es de pago, y el proyecto debía ser 100 % gratis. Por eso los lugares vienen de OpenStreetMap.
+- **«Cerca de mí»** usa la ubicación del propio navegador (el permiso de ubicación del teléfono o la computadora). Tampoco usa Google.
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+---
+
+## Qué puede hacer el usuario
+
+- Buscar lugares por **deporte, sector, precio y servicios**, o **cerca de mí**.
+- Ver la ficha del lugar con mapa, horario, precios y el botón **Cómo llegar** (observación 1 del profesor).
+- **Comparar** hasta 3 lugares lado a lado.
+- **Crear cuenta** y tener **Mi perfil** con sus datos, favoritos, su plan y su **progreso** (peso, medidas y notas por fecha) (observación 2 del profesor).
+- **Nutricionista:** llenar sus datos corporales (y una foto opcional, solo para mayores de 18 y con permiso), recibir una guía básica y enviar la solicitud a un nutricionista.
+- **Panel de administración:** el administrador gestiona lugares, mensajes de contacto y roles de usuarios; el nutricionista toma y responde solicitudes.
+
+Las cuentas de prueba (que solo existen en el simulador) están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md).
+
+---
+
+## Herramientas usadas (todas gratis)
+
+### Frontend
+| Herramienta | Para qué |
+|---|---|
+| **React 19** | Construir las pantallas. |
+| **TypeScript** | JavaScript con tipos, para tener menos errores. |
+| **Vite 8** | Arrancar el proyecto en desarrollo y generar la versión final (`dist/`). |
+| **Tailwind CSS v4** | Estilos y colores de la marca. |
+| **React Router v8** | Navegar entre páginas (`/lugares`, `/perfil`, etc.). |
+| **Leaflet + React Leaflet** | El mapa interactivo. |
+| **Lucide React** | Íconos. |
+| **Manrope** (Google Fonts) | Tipo de letra. |
+
+### Datos y mapas
+| Herramienta | Para qué |
+|---|---|
+| **OpenStreetMap + Overpass API** | Lugares deportivos reales y el fondo del mapa (`scripts/import-osm.mjs`). |
+| **Enlace de Google Maps** (sin API) | El botón «Cómo llegar». |
+| **Geolocalización del navegador** | «Cerca de mí». |
+| **localStorage** (simulador) | Guardar cuentas y datos mientras no hay backend. |
+
+### Backend (preparado, falta conectarlo)
+| Herramienta | Para qué |
+|---|---|
+| **Supabase** (plan gratis) | Base de datos PostgreSQL, inicio de sesión, permisos (RLS) y guardado de fotos. |
+| **Supabase CLI** | Levantar la base en local con Docker (`npx supabase start`). |
+| **Groq** (plan gratis) | IA con visión para la guía nutricional (pendiente). |
+
+### Pruebas y calidad
+| Herramienta | Para qué |
+|---|---|
+| **Vitest + Testing Library + jsdom** | 94 pruebas unitarias. |
+| **Playwright** | 29 pruebas de navegación real (computadora y celular). |
+| **Oxlint** | Revisar el código. |
+| **CodeRabbit** | Revisión automática de *pull requests* con IA (`.coderabbit.yaml`). |
+
+### Publicación
+| Herramienta | Para qué |
+|---|---|
+| **Cloudflare Workers** (plan gratis) | Hospedar la página (`wrangler.jsonc`). |
+| **Wrangler** | Publicar con `npx wrangler deploy`. |
+| **GitHub** | Guardar el código. |
+
+### Cómo se construyó
+El diseño y el plan se hicieron con **Claude Code**. Las pantallas las programaron agentes de IA (**Claude Haiku**) trabajando en paralelo, y las revisiones las hizo **Claude Opus**. Diseño: [`docs/superpowers/specs/`](docs/superpowers/specs/); plan: [`docs/superpowers/plans/`](docs/superpowers/plans/).
+
+---
+
+## Cómo correrlo en tu computadora
+
+Necesitas **Node.js 20 o más nuevo**.
+
+```bash
+npm install          # instala todo (una sola vez)
+npm run dev          # abre la página en http://localhost:5173
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Otros comandos:
+
+```bash
+npm run build        # genera la versión final en dist/
+npm test             # pruebas unitarias
+npm run e2e          # pruebas de navegación (Playwright)
+npm run lint         # revisa el código
+npx wrangler deploy  # publica en Cloudflare (necesita sesión de wrangler)
+```
+
+Base de datos en local (opcional, necesita Docker):
+
+```bash
+npx supabase start   # levanta la base y aplica supabase/migrations/
+npx supabase stop    # la apaga
+```
+
+---
+
+## Cómo está organizado
+
+```
+src/
+  pages/          pantallas (inicio, lugares, perfil, nutrición, admin…)
+  components/     piezas reutilizables (encabezado, tarjetas, mapa, formularios)
+  data/types.ts   el «contrato» de datos: lo que la página puede pedir
+  data/mock/      el simulador que cumple ese contrato hoy
+  auth/           sesión y protección de páginas por rol
+  lib/            utilidades (Cómo llegar, horarios, distancia, guía nutricional)
+supabase/         esquema de la base de datos real
+e2e/              pruebas de navegación
+docs/entrega/     evidencia para el PDF (observaciones, capturas, guion del video)
+```
+
+**Para conectar el backend** solo hay que crear `src/data/supabase/` cumpliendo el mismo contrato (`src/data/types.ts`) y cambiar una línea en `src/data/index.ts`. Las pantallas no cambian.
+
+---
+
+## Próximos pasos
+
+1. Crear el proyecto gratis en Supabase y conectar los datos reales (las cuentas ya no se perderán al cambiar de navegador).
+2. Conectar la IA de Groq para analizar la foto y los datos del nutricionista.
+3. Correo real de recuperación de contraseña.
+4. Confirmar precios y horarios de los lugares principales.
+
+Detalle en [`docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md`](docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md).
