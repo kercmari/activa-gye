@@ -3,9 +3,12 @@ import { Link, NavLink } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
 
 const ITEMS = [
-  { to: '/admin', label: 'Resumen', end: true, adminOnly: false },
-  { to: '/admin/nutricion', label: 'Solicitudes', end: false, adminOnly: false },
+  { to: '/admin', label: 'Resumen', end: true, adminOnly: true },
+  { to: '/nutri', label: 'Panel nutricionista', end: false, adminOnly: false },
+  { to: '/admin/fases', label: 'Fases', end: false, adminOnly: true },
   { to: '/admin/lugares', label: 'Lugares', end: false, adminOnly: true },
+  { to: '/admin/datos-lugares', label: 'Datos de lugares', end: false, adminOnly: true },
+  { to: '/admin/pagos', label: 'Pagos', end: false, adminOnly: true },
   { to: '/admin/mensajes', label: 'Mensajes', end: false, adminOnly: true },
   { to: '/admin/usuarios', label: 'Usuarios', end: false, adminOnly: true },
 ];

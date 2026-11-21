@@ -4,6 +4,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
 import { repo, type Session } from '../../data';
 import { LinkButton } from '../ui/Button';
+import NotificationBell from '../NotificationBell';
 
 export const NAV_ITEMS = [
   { to: '/', label: 'Inicio', end: true },
@@ -29,9 +30,13 @@ function AccountLinks({ session, onSignOut, onNavigate }: { session: Session; on
   return (
     <>
       <Link to="/perfil" className={itemClass} onClick={onNavigate}>Mi perfil</Link>
-      <Link to="/nutricion" className={itemClass} onClick={onNavigate}>Mi plan nutricional</Link>
+      <Link to="/mi-panel" className={itemClass} onClick={onNavigate}>Mi panel</Link>
+      <Link to="/notificaciones" className={itemClass} onClick={onNavigate}>Notificaciones</Link>
       {canSeePanel(session) ? (
-        <Link to="/admin" className={itemClass} onClick={onNavigate}>Panel</Link>
+        <Link to="/nutri" className={itemClass} onClick={onNavigate}>Panel nutricionista</Link>
+      ) : null}
+      {session.profile.role === 'admin' ? (
+        <Link to="/admin" className={itemClass} onClick={onNavigate}>Administración</Link>
       ) : null}
       <button type="button" onClick={onSignOut} className={`${itemClass} flex w-full items-center gap-2 text-left`}>
         <LogOut className="h-4 w-4" aria-hidden="true" />
@@ -115,6 +120,8 @@ export function Header() {
           <LinkButton to="/deportes" variant="primary" size="md" className="!hidden xl:!inline-flex">
             Explorar actividades <span aria-hidden="true">→</span>
           </LinkButton>
+
+          {session ? <NotificationBell /> : null}
 
           {session ? (
             <div ref={accountRef} className="relative">

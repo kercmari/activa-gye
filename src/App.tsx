@@ -1,9 +1,10 @@
 /**
  * MAPA DE RUTAS (dueño: orquestador). Las tareas NO editan este archivo: solo reemplazan sus páginas.
- * Coincide con la tabla §7 del diseño (docs/superpowers/specs/2026-11-21-activa-gye-design.md).
+ * Coincide con §8 de docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md.
  */
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
+import { SettingsProvider } from './auth/SettingsContext';
 import { RequireAuth, RequireGuest, RequireRole } from './auth/guards';
 import Layout from './components/layout/Layout';
 import ScrollToTop from './components/ScrollToTop';
@@ -24,13 +25,19 @@ import RecuperarPage from './pages/RecuperarPage';
 import PerfilPage from './pages/PerfilPage';
 import PerfilEditarPage from './pages/PerfilEditarPage';
 import NutricionPage from './pages/NutricionPage';
-import NutricionNuevaPage from './pages/NutricionNuevaPage';
-import NutricionDetallePage from './pages/NutricionDetallePage';
+import MiPanelPage from './pages/panel/MiPanelPage';
+import ReportePage from './pages/panel/ReportePage';
+import NotificacionesPage from './pages/NotificacionesPage';
+import TableroPage from './pages/nutri/TableroPage';
+import SolicitudesPage from './pages/nutri/SolicitudesPage';
+import PacientePage from './pages/nutri/PacientePage';
+import SuscripcionPage from './pages/nutri/SuscripcionPage';
 import AdminHomePage from './pages/admin/AdminHomePage';
 import AdminLugaresPage from './pages/admin/AdminLugaresPage';
 import AdminLugarPage from './pages/admin/AdminLugarPage';
-import AdminNutricionPage from './pages/admin/AdminNutricionPage';
-import AdminNutricionDetallePage from './pages/admin/AdminNutricionDetallePage';
+import AdminFasesPage from './pages/admin/AdminFasesPage';
+import AdminDatosLugaresPage from './pages/admin/AdminDatosLugaresPage';
+import AdminPagosPage from './pages/admin/AdminPagosPage';
 import AdminMensajesPage from './pages/admin/AdminMensajesPage';
 import AdminUsuariosPage from './pages/admin/AdminUsuariosPage';
 
@@ -59,16 +66,22 @@ export function AppRoutes() {
         <Route element={<RequireAuth />}>
           <Route path="perfil" element={<PerfilPage />} />
           <Route path="perfil/editar" element={<PerfilEditarPage />} />
-          <Route path="nutricion/nueva" element={<NutricionNuevaPage />} />
-          <Route path="nutricion/:id" element={<NutricionDetallePage />} />
+          <Route path="mi-panel" element={<MiPanelPage />} />
+          <Route path="mi-panel/reporte" element={<ReportePage />} />
+          <Route path="notificaciones" element={<NotificacionesPage />} />
         </Route>
 
         <Route element={<RequireRole roles={['nutricionista', 'admin']} />}>
-          <Route path="admin" element={<AdminHomePage />} />
-          <Route path="admin/nutricion" element={<AdminNutricionPage />} />
-          <Route path="admin/nutricion/:id" element={<AdminNutricionDetallePage />} />
+          <Route path="nutri" element={<TableroPage />} />
+          <Route path="nutri/solicitudes" element={<SolicitudesPage />} />
+          <Route path="nutri/pacientes/:id" element={<PacientePage />} />
+          <Route path="nutri/suscripcion" element={<SuscripcionPage />} />
         </Route>
         <Route element={<RequireRole roles={['admin']} />}>
+          <Route path="admin" element={<AdminHomePage />} />
+          <Route path="admin/fases" element={<AdminFasesPage />} />
+          <Route path="admin/datos-lugares" element={<AdminDatosLugaresPage />} />
+          <Route path="admin/pagos" element={<AdminPagosPage />} />
           <Route path="admin/lugares" element={<AdminLugaresPage />} />
           <Route path="admin/lugares/nuevo" element={<AdminLugarPage />} />
           <Route path="admin/lugares/:id" element={<AdminLugarPage />} />
@@ -84,11 +97,13 @@ export function AppRoutes() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <AppRoutes />
-      </BrowserRouter>
-    </AuthProvider>
+    <SettingsProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <AppRoutes />
+        </BrowserRouter>
+      </AuthProvider>
+    </SettingsProvider>
   );
 }

@@ -34,8 +34,8 @@ describe('AdminShell', () => {
     expect(screen.queryByRole('link', { name: 'Lugares' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Mensajes' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Resumen' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Solicitudes' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Fases' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Panel nutricionista' })).toBeInTheDocument();
   });
 
   it('admin ve todas las secciones', () => {

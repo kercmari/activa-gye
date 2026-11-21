@@ -8,15 +8,11 @@ import { Button, LinkButton } from '../components/ui/Button';
 import { errorMessage } from '../components/ui/States';
 import DataTab from '../components/profile/DataTab';
 import FavoritesTab from '../components/profile/FavoritesTab';
-import PlanTab from '../components/profile/PlanTab';
-import ProgressTab from '../components/profile/ProgressTab';
 import { ROLE_LABELS } from '../components/profile/labels';
 
 const TABS = [
   { id: 'datos', label: 'Mis datos' },
   { id: 'favoritos', label: 'Mis favoritos' },
-  { id: 'plan', label: 'Mi plan' },
-  { id: 'progreso', label: 'Mi progreso' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
 
@@ -24,7 +20,7 @@ function isTab(value: string | null): value is TabId {
   return TABS.some((t) => t.id === value);
 }
 
-/** Mi perfil: cabecera de la cuenta y pestañas (datos, favoritos, plan, progreso). Se guardan en ?tab=. */
+/** Mi perfil: cabecera de la cuenta y pestañas (datos, favoritos). Ficha, calendario y pagos están en /mi-panel. */
 export default function PerfilPage() {
   const { session, refresh } = useAuth();
   const navigate = useNavigate();
@@ -149,8 +145,6 @@ export default function PerfilPage() {
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
           {tab === 'datos' ? <DataTab profile={profile} email={session.user.email} /> : null}
           {tab === 'favoritos' ? <FavoritesTab /> : null}
-          {tab === 'plan' ? <PlanTab /> : null}
-          {tab === 'progreso' ? <ProgressTab /> : null}
         </div>
       </section>
     </>

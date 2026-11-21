@@ -9,9 +9,11 @@
 ## Reglas duras
 
 - Los mensajes de commit empiezan con el ID del brief, p. ej. `F1: ...`. Agrega rutas explícitas (`git add <archivo>`), nunca `git add -A` ni `git add .`.
+- **Sin la línea `Co-Authored-By`** en los commits (regla de la dueña). No cambies el autor configurado.
 - Nunca push, nunca force-push, nunca reescribir historia. Nunca desplegar.
 - **No instales dependencias** (`npm install <algo>` está prohibido): todo lo necesario ya está en `package.json`. Si de verdad falta algo, anótalo en el reporte y sigue sin ello.
-- **Solo toca los archivos que tu brief dice que son tuyos.** Nunca edites `src/App.tsx`, `src/data/types.ts`, `src/data/index.ts`, `src/data/mock/index.ts`, `src/auth/*`, `src/index.css`, `package.json` ni `supabase/`. Si necesitas un cambio ahí, escríbelo en el reporte (sección "Pedidos al orquestador").
+- **Solo toca los archivos que tu brief dice que son tuyos.** Nunca edites `src/App.tsx`, `src/data/types.ts`, `src/data/index.ts`, `src/data/fallback.ts`, `src/data/mock/index.ts`, `src/data/supabase/index.ts`, `src/auth/*`, `src/components/PhaseGate.tsx`, `src/index.css`, `package.json`, `docs/superpowers/plans/*`, ni migraciones que no sean las de tu brief. Si necesitas un cambio ahí, escríbelo en el reporte (sección "Pedidos al orquestador").
+- **Base de datos local:** solo las tareas SQL de la ronda (S1, S3, S4, XS) pueden correr `npx supabase db reset` / `npx supabase test db`. Nadie corre `supabase start`, `stop`, `link` ni `db push`.
 - Comandos en primer plano. Nunca leas secretos (`.env`).
 - Cero errores sin manejar: ninguna promesa sin `catch` en pantallas; cada carga tiene estado *cargando*, *vacío* y *error con botón Reintentar*.
 - Textos visibles **en español de Ecuador**, sin "lorem ipsum" ni datos inventados presentados como reales.

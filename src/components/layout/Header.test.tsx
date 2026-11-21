@@ -38,12 +38,12 @@ describe('Header', () => {
   it('muestra Panel solo a nutricionista o admin', () => {
     vi.mocked(useAuth).mockReturnValue({ session: sessionFor('usuario') as never, loading: false, refresh: async () => {} });
     const { unmount } = renderHeader();
-    expect(screen.queryByText('Panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Panel nutricionista')).not.toBeInTheDocument();
     unmount();
 
     vi.mocked(useAuth).mockReturnValue({ session: sessionFor('nutricionista') as never, loading: false, refresh: async () => {} });
     const second = renderHeader();
-    expect(screen.getByText('Panel')).toBeInTheDocument();
+    expect(screen.getByText('Panel nutricionista')).toBeInTheDocument();
     second.unmount();
   });
 

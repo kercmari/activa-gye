@@ -30,20 +30,6 @@ const signUpInput = (email = 'ana@example.com') => ({
   birth_date: '1995-03-15',
 });
 
-const nutritionInput = (overrides: Partial<Parameters<Repo['createNutritionRequest']>[0]> = {}) => ({
-  sex: 'femenino' as const,
-  height_cm: 165,
-  weight_kg: 70,
-  waist_cm: null,
-  activity_level: 'moderado' as const,
-  goal: 'bajar_peso' as const,
-  restrictions: null,
-  health_conditions: null,
-  photo: null,
-  consent_photo: false,
-  ...overrides,
-});
-
 async function expectCode(promise: Promise<unknown>, code: string): Promise<void> {
   const err = await promise.then(() => null, (e: unknown) => e);
   expect(err).toBeInstanceOf(AppError);
@@ -109,13 +95,12 @@ describe('cuentas', () => {
     const session = await repo.signUp(signUpInput());
     await repo.addProgress({ entry_date: '2026-01-05', weight_kg: 70, active_minutes: null, activity: null, note: null });
     await repo.toggleFavorite('p1');
-    await repo.createNutritionRequest(nutritionInput());
 
     await repo.deleteMyAccount();
 
     expect(await repo.getSession()).toBeNull();
     const uid = session.user.id;
-    const tables = ['users', 'favorites', 'progress_entries', 'nutrition_requests', 'photos'];
+    const tables = ['users', 'favorites', 'progress_entries', 'photos'];
     for (const t of tables) {
       const raw = localStorage.getItem(`activa-gye:v1:${t}`) ?? '[]';
       expect(raw).not.toContain(uid);
@@ -150,86 +135,7 @@ describe('perfil y progreso', () => {
   });
 });
 
-describe('nutrición', () => {
-  it('nutrición: crea solicitud con guía básica', async () => {
-    await repo.signUp(signUpInput());
-    const req = await repo.createNutritionRequest(nutritionInput());
-    expect(req.status).toBe('guia_lista');
-    expect(req.ai_kind).toBe('basica');
-    expect(req.ai_status).toBe('lista');
-    expect(req.ai_guide?.daily_kcal).toBe(1850);
-    expect(req.ai_guide?.sample_day).toHaveLength(5);
-    expect(req.consent_at).toBeNull();
-  });
-
-  it('nutrición: foto sin consentimiento falla', async () => {
-    await repo.signUp(signUpInput());
-    const photo = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
-    await expectCode(
-      repo.createNutritionRequest(nutritionInput({ photo, consent_photo: false })),
-      'FOTO_SIN_CONSENTIMIENTO',
-    );
-  });
-
-  it('otro usuario no ve mi solicitud', async () => {
-    await repo.signUp(signUpInput());
-    const req = await repo.createNutritionRequest(nutritionInput());
-    await repo.signOut();
-
-    await repo.signUp(signUpInput('luis@example.com'));
-    expect(await repo.getNutritionRequest(req.id)).toBeNull();
-    expect(await repo.listMyNutritionRequests()).toEqual([]);
-  });
-
-  it('nutricionista toma y responde; otro nutricionista no puede responder', async () => {
-    const owner = await repo.signUp(signUpInput());
-    const req = await repo.createNutritionRequest(nutritionInput());
-    await repo.signOut();
-
-    await repo.signIn('nutri@activagye.test', 'ActivaNutri2026!');
-    await repo.takeNutritionRequest(req.id);
-    await repo.answerNutritionRequest(req.id, 'Reduce las frituras y camina 30 minutos al día.');
-    await repo.signOut();
-
-    // Segundo nutricionista: se crea como usuario y el admin le cambia el rol.
-    const second = await repo.signUp(signUpInput('segunda@example.com'));
-    await repo.signOut();
-    await repo.signIn('admin@activagye.test', 'ActivaAdmin2026!');
-    await repo.adminSetRole(second.user.id, 'nutricionista');
-    await repo.signOut();
-
-    await repo.signIn('segunda@example.com', 'clave-segura-1');
-    await expectCode(repo.answerNutritionRequest(req.id, 'Un plan que no debería guardarse aquí.'), 'NO_ASIGNADA_A_TI');
-    expect(owner.user.id).not.toBe(second.user.id);
-  });
-
-  it('admin cambia rol de otro pero no el suyo', async () => {
-    const admin = await repo.signIn('admin@activagye.test', 'ActivaAdmin2026!');
-    const other = await repo.signUp(signUpInput('otra@example.com'));
-    await repo.signOut();
-    await repo.signIn('admin@activagye.test', 'ActivaAdmin2026!');
-
-    await repo.adminSetRole(other.user.id, 'nutricionista');
-    const users = await repo.adminListUsers('otra@example');
-    expect(users[0].role).toBe('nutricionista');
-
-    await expectCode(repo.adminSetRole(admin.user.id, 'usuario'), 'NO_PUEDES_CAMBIAR_TU_ROL');
-  });
-});
-
 describe('revisión R1/R2: datos y cuenta', () => {
-  it('R1 foto: objeto falsificado con mi user_id y foto ajena no devuelve la foto', async () => {
-    await repo.signUp(signUpInput('dueña@example.com'));
-    const photo = new File(['x'], 'foto.jpg', { type: 'image/jpeg' });
-    const req = await repo.createNutritionRequest(nutritionInput({ photo, consent_photo: true }));
-    expect(await repo.getNutritionPhotoUrl(req)).toBe('data:image/jpeg;base64,FOTO');
-    await repo.signOut();
-
-    const intruso = await repo.signUp(signUpInput('intruso@example.com'));
-    const forged = { ...req, user_id: intruso.user.id };
-    expect(await repo.getNutritionPhotoUrl(forged)).toBeNull();
-  });
-
   it('R1 admin: usuario normal ve el mensaje SOLO_ADMIN igual que el catálogo', async () => {
     await repo.signUp(signUpInput('normal@example.com'));
     const err = await repo.adminListUsers().then(() => null, (e: unknown) => e);

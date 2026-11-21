@@ -1,4 +1,4 @@
-import type { ActivityLevel, Goal, NutritionRequest, Sex } from '../../data';
+import type { ActivityLevel, CareRequest, Goal, Sex } from '../../data';
 
 export const SEX_OPTIONS: { value: Sex; label: string }[] = [
   { value: 'femenino', label: 'Femenino' },
@@ -34,10 +34,11 @@ export const SEX_LABELS: Record<Sex, string> = Object.fromEntries(
   SEX_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<Sex, string>;
 
-export const STATUS_LABELS: Record<NutritionRequest['status'], string> = {
-  enviada: 'Enviada',
-  guia_lista: 'Guía lista',
-  respondida: 'Respondida por nutricionista',
+export const STATUS_LABELS: Record<CareRequest['status'], string> = {
+  abierta: 'Esperando nutricionista',
+  aceptada: 'En atención',
+  finalizada: 'Finalizada',
+  cancelada: 'Cancelada',
 };
 
 /** Edad en años cumplidos a partir de 'AAAA-MM-DD'. null si no hay fecha válida. */

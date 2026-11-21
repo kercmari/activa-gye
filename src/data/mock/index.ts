@@ -1,11 +1,17 @@
 /**
- * Simulador de datos (sin servidor). Se arma con dos partes:
- * - catalog.ts  (tarea F2a): sectores, deportes, lugares, contacto, admin de lugares y mensajes.
- * - accounts.ts (tarea F2b): cuentas, sesión, perfil, favoritos, progreso, nutrición, admin de usuarios.
- * Este archivo solo las une: no lo cambies.
+ * Simulador de datos (sin servidor): solo para pruebas y para el modo sin base.
+ * Fases 1–3 (ficha, nutricionista, pagos, reseñas) responden SIN_BASE: necesitan Supabase.
+ * Dueño: orquestador.
  */
-import type { Repo } from '../types';
+import type { AppSettings, Repo } from '../types';
+import { withFallback } from '../fallback';
 import { catalogPart } from './catalog';
 import { accountsPart } from './accounts';
 
-export const mockRepo: Repo = { ...catalogPart, ...accountsPart } as Repo;
+const MOCK_SETTINGS: AppSettings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 0 };
+
+export const mockRepo: Repo = withFallback({
+  ...catalogPart,
+  ...accountsPart,
+  getSettings: async () => MOCK_SETTINGS,
+});

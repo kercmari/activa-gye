@@ -1,10 +1,10 @@
 /**
- * Simulador de cuentas (tarea F2b): registro, ingreso, perfil, favoritos, progreso, nutrición y admin de usuarios.
- * Las reglas copian las restricciones de supabase/migrations (perfiles, progress_entries, nutrition_requests).
- * Tablas en localStorage: users, favorites, progress_entries, nutrition_requests, photos.
+ * Simulador de cuentas: registro, ingreso, perfil, favoritos, progreso y admin de usuarios.
+ * Solo para pruebas y modo sin base. Las funciones de fases 1–3 (ficha, nutricionista, pagos, reseñas) responden SIN_BASE.
+ * Tablas en localStorage: users, favorites, progress_entries, photos.
  */
 import type {
-  AdminUser, NewNutritionRequest, NutritionRequest, Place, Profile, ProfilePatch, ProgressEntry,
+  AdminUser, Place, Profile, ProfilePatch, ProgressEntry,
   ProgressInput, Repo, Role, Session, SignUpInput, Goal, ActivityLevel, Sex,
 } from '../types';
 import { AppError } from '../types';
@@ -13,8 +13,6 @@ import { ensureSeedUsers } from './seed-users';
 import {
   readTable, writeTable, currentUser, setSessionUserId, hashPassword, wait, nowIso, type StoredUser,
 } from './store';
-import { buildBasicGuide } from '../../lib/nutrition/guide';
-import { downscaleToDataUrl } from '../../lib/image';
 
 type FavoriteRow = { user_id: string; place_id: string; created_at: string };
 type PhotoRow = { path: string; user_id: string; data_url: string };
@@ -72,16 +70,7 @@ function requireRole(allowed: Role[], code: string, message: string): StoredUser
   return u;
 }
 
-const requireStaff = () => requireRole(['nutricionista', 'admin'], 'SOLO_NUTRICIONISTA', 'Solo un nutricionista puede hacer esto.');
 const requireAdmin = () => requireRole(['admin'], 'SOLO_ADMIN', 'Solo el administrador puede hacer esto.');
-
-function isStaff(role: Role): boolean {
-  return role === 'nutricionista' || role === 'admin';
-}
-
-function nameOf(userId: string): string {
-  return readTable<StoredUser>('users').find((u) => u.id === userId)?.profile.full_name ?? '';
-}
 
 /** Escucha de cambios de sesión (módulo, no React). */
 const listeners = new Set<(s: Session | null) => void>();
@@ -223,7 +212,6 @@ async function deleteMyAccount(): Promise<void> {
   writeTable('users', readTable<StoredUser>('users').filter((u) => u.id !== me.id));
   writeTable('favorites', readTable<FavoriteRow>('favorites').filter((f) => f.user_id !== me.id));
   writeTable('progress_entries', readTable<ProgressEntry>('progress_entries').filter((p) => p.user_id !== me.id));
-  writeTable('nutrition_requests', readTable<NutritionRequest>('nutrition_requests').filter((r) => r.user_id !== me.id));
   writeTable('photos', readTable<PhotoRow>('photos').filter((p) => p.user_id !== me.id));
   setSessionUserId(null);
   notifyAuth();
@@ -324,163 +312,6 @@ async function deleteProgress(id: string): Promise<void> {
   writeTable('progress_entries', rows.filter((p) => !(p.id === id && p.user_id === me.id)));
 }
 
-// Nutrición
-
-function withRequesterName(r: NutritionRequest): NutritionRequest {
-  return { ...r, requester_name: nameOf(r.user_id) };
-}
-
-async function createNutritionRequest(input: NewNutritionRequest): Promise<NutritionRequest> {
-  await ensureSeedUsers();
-  await wait();
-  const me = requireUser();
-  if (!me.profile.birth_date) {
-    throw invalid('Completa tu fecha de nacimiento en Editar perfil.');
-  }
-  const age = ageFrom(me.profile.birth_date);
-  if (age < 16 || age > 100) throw invalid('Tu edad no permite pedir esta guía.');
-  if (!SEX.includes(input.sex)) throw invalid();
-  if (!(input.height_cm >= 100 && input.height_cm <= 250)) throw invalid('La estatura debe estar entre 100 y 250 cm.');
-  if (!(input.weight_kg >= 25 && input.weight_kg <= 400)) throw invalid('El peso debe estar entre 25 y 400 kg.');
-  if (input.waist_cm !== null && !(input.waist_cm >= 40 && input.waist_cm <= 250)) {
-    throw invalid('La cintura debe estar entre 40 y 250 cm.');
-  }
-  if (!ACTIVITY.includes(input.activity_level)) throw invalid();
-  if (!GOALS.includes(input.goal)) throw invalid();
-  const restrictions = input.restrictions?.trim() || null;
-  const health = input.health_conditions?.trim() || null;
-  if (restrictions && restrictions.length > 500) throw invalid('Las restricciones pueden tener hasta 500 caracteres.');
-  if (health && health.length > 500) throw invalid('Las condiciones de salud pueden tener hasta 500 caracteres.');
-
-  if (input.photo) {
-    if (!input.consent_photo) throw new AppError('FOTO_SIN_CONSENTIMIENTO', 'Debes aceptar el uso de tu foto.');
-    if (age < 18) throw new AppError('FOTO_MENOR_18', 'La foto solo se permite a mayores de 18 años.');
-  }
-
-  let photoPath: string | null = null;
-  if (input.photo) {
-    const dataUrl = await downscaleToDataUrl(input.photo);
-    photoPath = `${me.id}/${crypto.randomUUID()}.jpg`;
-    writeTable('photos', [...readTable<PhotoRow>('photos'), { path: photoPath, user_id: me.id, data_url: dataUrl }]);
-  }
-
-  const now = nowIso();
-  const request: NutritionRequest = {
-    id: crypto.randomUUID(),
-    user_id: me.id,
-    age,
-    sex: input.sex,
-    height_cm: input.height_cm,
-    weight_kg: input.weight_kg,
-    waist_cm: input.waist_cm,
-    activity_level: input.activity_level,
-    goal: input.goal,
-    restrictions,
-    health_conditions: health,
-    photo_path: photoPath,
-    consent_photo: input.consent_photo,
-    consent_at: input.consent_photo ? now : null,
-    ai_guide: buildBasicGuide({
-      age,
-      sex: input.sex,
-      height_cm: input.height_cm,
-      weight_kg: input.weight_kg,
-      activity_level: input.activity_level,
-      goal: input.goal,
-      restrictions,
-      health_conditions: health,
-    }),
-    ai_kind: 'basica',
-    ai_status: 'lista',
-    status: 'guia_lista',
-    nutritionist_id: null,
-    nutritionist_plan: null,
-    responded_at: null,
-    created_at: now,
-    updated_at: now,
-  };
-  writeTable('nutrition_requests', [...readTable<NutritionRequest>('nutrition_requests'), request]);
-  return request;
-}
-
-async function listMyNutritionRequests(): Promise<NutritionRequest[]> {
-  await ensureSeedUsers();
-  await wait();
-  const me = requireUser();
-  return readTable<NutritionRequest>('nutrition_requests')
-    .filter((r) => r.user_id === me.id)
-    .sort((a, b) => b.created_at.localeCompare(a.created_at));
-}
-
-async function getNutritionRequest(id: string): Promise<NutritionRequest | null> {
-  await ensureSeedUsers();
-  await wait();
-  const me = currentUser();
-  if (!me) return null;
-  const row = readTable<NutritionRequest>('nutrition_requests').find((r) => r.id === id);
-  if (!row) return null;
-  if (row.user_id === me.id) return row;
-  if (isStaff(me.profile.role)) return withRequesterName(row);
-  return null;
-}
-
-async function getNutritionPhotoUrl(request: NutritionRequest): Promise<string | null> {
-  await wait();
-  const me = currentUser();
-  if (!me) return null;
-  // R1: no confiar en el objeto que llega; buscar la fila guardada por id.
-  const row = readTable<NutritionRequest>('nutrition_requests').find((r) => r.id === request.id);
-  if (!row || !row.photo_path) return null;
-  if (row.user_id !== me.id && !isStaff(me.profile.role)) return null;
-  const photo = readTable<PhotoRow>('photos').find((p) => p.path === row.photo_path);
-  return photo?.data_url ?? null;
-}
-
-async function listAllNutritionRequests(): Promise<NutritionRequest[]> {
-  await ensureSeedUsers();
-  await wait();
-  requireStaff();
-  return readTable<NutritionRequest>('nutrition_requests')
-    .sort((a, b) => b.created_at.localeCompare(a.created_at))
-    .map(withRequesterName);
-}
-
-async function takeNutritionRequest(id: string): Promise<void> {
-  await wait();
-  const me = requireStaff();
-  const rows = readTable<NutritionRequest>('nutrition_requests');
-  const idx = rows.findIndex((r) => r.id === id);
-  if (idx < 0) throw new AppError('NO_EXISTE', 'No encontramos esa solicitud.');
-  if (rows[idx].nutritionist_id) throw new AppError('YA_TOMADA', 'Otra persona ya tomó esta solicitud.');
-  rows[idx] = { ...rows[idx], nutritionist_id: me.id, updated_at: nowIso() };
-  writeTable('nutrition_requests', rows);
-}
-
-async function answerNutritionRequest(id: string, plan: string): Promise<void> {
-  await wait();
-  const me = requireStaff();
-  const text = plan.trim();
-  if (text.length < 20) throw new AppError('PLAN_MUY_CORTO', 'Escribe un plan de al menos 20 caracteres.');
-  if (text.length > 8000) throw invalid('El plan puede tener hasta 8000 caracteres.');
-  const rows = readTable<NutritionRequest>('nutrition_requests');
-  const idx = rows.findIndex((r) => r.id === id);
-  if (idx < 0) throw new AppError('NO_EXISTE', 'No encontramos esa solicitud.');
-  const row = rows[idx];
-  if (row.nutritionist_id && row.nutritionist_id !== me.id && me.profile.role !== 'admin') {
-    throw new AppError('NO_ASIGNADA_A_TI', 'Esta solicitud la tomó otra persona.');
-  }
-  const now = nowIso();
-  rows[idx] = {
-    ...row,
-    nutritionist_id: row.nutritionist_id ?? me.id,
-    nutritionist_plan: text,
-    status: 'respondida',
-    responded_at: now,
-    updated_at: now,
-  };
-  writeTable('nutrition_requests', rows);
-}
-
 // Admin de usuarios
 
 async function adminListUsers(search?: string): Promise<AdminUser[]> {
@@ -521,13 +352,6 @@ export const accountsPart: Partial<Repo> = {
   listProgress,
   addProgress,
   deleteProgress,
-  createNutritionRequest,
-  listMyNutritionRequests,
-  getNutritionRequest,
-  getNutritionPhotoUrl,
-  listAllNutritionRequests,
-  takeNutritionRequest,
-  answerNutritionRequest,
   adminListUsers,
   adminSetRole,
 };
