@@ -112,7 +112,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <LinkButton to="/deportes" variant="primary" size="md" className="hidden xl:inline-flex">
+          <LinkButton to="/deportes" variant="primary" size="md" className="!hidden xl:!inline-flex">
             Explorar actividades <span aria-hidden="true">→</span>
           </LinkButton>
 
@@ -142,7 +142,7 @@ export function Header() {
           ) : (
             <Link
               to="/ingresar"
-              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-white hover:bg-white/10"
+              className="hidden items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-white hover:bg-white/10 sm:inline-flex"
             >
               <User className="h-4 w-4" aria-hidden="true" />
               Ingresar
@@ -163,7 +163,7 @@ export function Header() {
       </div>
 
       {menuOpen ? (
-        <div id="menu-movil" className="border-t border-white/10 bg-navy-900 px-4 pb-6 pt-3 lg:hidden">
+        <div id="menu-movil" className="max-h-[calc(100dvh-4.5rem)] overflow-y-auto overscroll-contain border-t border-white/10 bg-navy-900 px-4 pb-6 pt-3 lg:hidden">
           <nav aria-label="Menú móvil" className="flex flex-col">
             {NAV_ITEMS.map((item) => (
               <NavLink

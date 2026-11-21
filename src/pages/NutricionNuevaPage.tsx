@@ -129,6 +129,8 @@ export default function NutricionNuevaPage() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    // Enter en un paso intermedio solo avanza; enviar es solo desde «Revisa tus datos».
+    if (!isLastStep) { next(); return; }
     if (submitting) return;
     setSubmitError(null);
     setSubmitting(true);
@@ -319,11 +321,11 @@ export default function NutricionNuevaPage() {
               </Button>
             ) : <span />}
             {isLastStep ? (
-              <Button type="submit" variant="primary" disabled={submitting} className="w-full sm:w-auto">
+              <Button key="enviar" type="submit" variant="primary" disabled={submitting} className="w-full sm:w-auto">
                 {submitting ? 'Generando tu guía…' : 'Enviar'}
               </Button>
             ) : (
-              <Button variant="primary" onClick={next} disabled={step === 0 && !birth} iconRight={ArrowRight} className="w-full sm:w-auto">
+              <Button key="siguiente" variant="primary" onClick={next} disabled={step === 0 && !birth} iconRight={ArrowRight} className="w-full sm:w-auto">
                 Siguiente
               </Button>
             )}
