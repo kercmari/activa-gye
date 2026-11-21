@@ -1,0 +1,22 @@
+# Configuración de CodeRabbit (revisión automática de pull requests con IA, gratis en repos públicos).
+# Docs: https://docs.coderabbit.ai/reference/configuration
+language: es
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  auto_review:
+    enabled: true
+    drafts: false
+  path_filters:
+    - "!work/**"
+    - "!package-lock.json"
+    - "!src/data/mock/places.osm.json"
+    - "!docs/entrega/*.png"
+    - "!public/img/**"
+  path_instructions:
+    - path: "src/**"
+      instructions: "Proyecto de clase en React + TypeScript. Las pantallas solo usan `repo` de src/data/index.ts. Revisa que cada carga tenga estados cargando/vacío/error, que todo botón funcione y tenga cómo volver, y que los textos estén en español de Ecuador."
+chat:
+  auto_reply: true
