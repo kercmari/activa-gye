@@ -122,3 +122,14 @@ test('ninguna página principal muestra textos de prueba', async ({ page }) => {
     await revisarTextos(page);
   }
 });
+
+test('[landing] sin scroll horizontal a 360 px y el botón de menú está a la vista', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'solo móvil');
+  for (const ruta of ['/', '/lugares', '/deportes', '/contacto']) {
+    await page.goto(ruta);
+    await expect(page.locator('main')).toBeVisible();
+    const ancho = await page.evaluate(() => document.documentElement.scrollWidth);
+    expect(ancho, `scrollWidth en ${ruta}`).toBeLessThanOrEqual(360);
+    await expect(page.getByRole('button', { name: 'Abrir menú' })).toBeInViewport();
+  }
+});
