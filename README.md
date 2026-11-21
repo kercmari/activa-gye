@@ -1,6 +1,8 @@
 # Activa GYE
 
-Página web para **encontrar dónde hacer deporte en Guayaquil**: gimnasios, canchas, piscinas, yoga, baile, boxeo y más. Proyecto de clase (Fase 5).
+Plataforma para **encontrar dónde hacer deporte en Guayaquil** y **conectar pacientes con nutricionistas**. Funciona como intermediaria, al estilo Uber: el paciente pide atención y un nutricionista la acepta y lo acompaña. No hay IA ni asistente automático: atienden personas.
+
+Proyecto de clase (Fase 5).
 
 - **Página publicada:** https://activa-gye.agentpulqora.workers.dev
 - **Código:** https://github.com/kercmari/activa-gye
@@ -15,7 +17,7 @@ Página web para **encontrar dónde hacer deporte en Guayaquil**: gimnasios, can
 | **Datos** | ✅ Simulados en el navegador | Cuentas, perfil, favoritos, progreso y solicitudes al nutricionista se guardan en el navegador de cada persona (`localStorage`). Si cambias de navegador o borras los datos, se pierden. |
 | **Lugares** | ✅ Reales | 300 lugares deportivos reales de Guayaquil tomados de **OpenStreetMap**. Precio y horario dicen «Consultar» cuando no hay dato confirmado. |
 | **Backend** (base de datos real) | 🟡 Diseñado, **todavía no conectado** | El esquema de la base de datos está escrito y probado en local (`supabase/migrations/`), pero la página publicada aún no lo usa. |
-| **IA del nutricionista** | 🟡 Pendiente | Hoy la guía es **básica y automática** (fórmula Mifflin-St Jeor, sin IA). La IA con foto (Groq) se conecta junto con el backend. |
+| **Nutricionistas** | 🟡 En construcción | Plataforma intermediaria: el paciente llena su ficha y pide atención; un nutricionista la acepta, arma su calendario y le da seguimiento. Se entrega en 3 fases (ver abajo). |
 
 ### ¿Hay conexión con Google para ver las ubicaciones?
 
@@ -32,7 +34,7 @@ Página web para **encontrar dónde hacer deporte en Guayaquil**: gimnasios, can
 - Ver la ficha del lugar con mapa, horario, precios y el botón **Cómo llegar** (observación 1 del profesor).
 - **Comparar** hasta 3 lugares lado a lado.
 - **Crear cuenta** y tener **Mi perfil** con sus datos, favoritos, su plan y su **progreso** (peso, medidas y notas por fecha) (observación 2 del profesor).
-- **Nutricionista:** llenar sus datos corporales (y una foto opcional, solo para mayores de 18 y con permiso), recibir una guía básica y enviar la solicitud a un nutricionista.
+- **Nutricionista:** el paciente llena su ficha (datos y foto de cuerpo entero, solo mayores de 18 y con permiso) y pide atención; un nutricionista la acepta.
 - **Panel de administración:** el administrador gestiona lugares, mensajes de contacto y roles de usuarios; el nutricionista toma y responde solicitudes.
 
 Las cuentas de prueba (que solo existen en el simulador) están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md).
@@ -66,7 +68,7 @@ Las cuentas de prueba (que solo existen en el simulador) están en [`docs/entreg
 |---|---|
 | **Supabase** (plan gratis) | Base de datos PostgreSQL, inicio de sesión, permisos (RLS) y guardado de fotos. |
 | **Supabase CLI** | Levantar la base en local con Docker (`npx supabase start`). |
-| **Groq** (plan gratis) | IA con visión para la guía nutricional (pendiente). |
+| **Brevo** (plan gratis) | Correos de aviso y de recuperar contraseña (fase 3). |
 
 ### Pruebas y calidad
 | Herramienta | Para qué |
@@ -135,10 +137,22 @@ docs/entrega/     evidencia para el PDF (observaciones, capturas, guion del vide
 
 ---
 
+## Entrega por fases
+
+La plataforma se entrega en **3 fases**. Todas se construyen, pero cada una se activa con un check en la base de datos (**Admin → Fases**):
+
+| Fase | Qué incluye |
+|---|---|
+| **1. Ingreso y ficha** | Registro e ingreso reales; panel del paciente con su ficha inicial (nombre, edad, género, peso, estatura, foto de cuerpo entero). Cupo limitado de pacientes. |
+| **2. Nutricionista** | Solicitudes (el primer nutricionista que acepta atiende), notificaciones, tablero, ficha de seguimiento, calendario que el paciente marca como cumplido, suscripción del nutricionista y facturas con pago por transferencia. |
+| **3. Para todos** | Registro abierto, precios y horarios completos de los lugares, calificaciones y reseñas, reporte de progreso en PDF y correos de aviso. |
+
+Detalle: [`docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md`](docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md).
+
 ## Próximos pasos
 
 1. Crear el proyecto gratis en Supabase y conectar los datos reales (las cuentas ya no se perderán al cambiar de navegador).
-2. Conectar la IA de Groq para analizar la foto y los datos del nutricionista.
+2. Panel del nutricionista: solicitudes, notificaciones, seguimiento, calendario y suscripción.
 3. Correo real de recuperación de contraseña.
 4. Confirmar precios y horarios de los lugares principales.
 
