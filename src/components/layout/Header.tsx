@@ -99,7 +99,7 @@ export function Header() {
         <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Activa GYE, ir al inicio">
           <img src="/img/logo.png" alt="" className="h-11 w-auto" />
           <span className="text-xl font-extrabold italic tracking-tight">
-            ACTIVA <span className="text-brand-blue">GYE</span>
+            ACTIVA <span className="text-brand-orange">GYE</span>
           </span>
         </Link>
 

@@ -12,7 +12,7 @@ export function Footer() {
           <Link to="/" className="flex items-center gap-3" aria-label="Activa GYE, ir al inicio">
             <img src="/img/logo.png" alt="" className="h-11 w-auto" />
             <span className="text-xl font-extrabold italic tracking-tight">
-              ACTIVA <span className="text-brand-blue">GYE</span>
+              ACTIVA <span className="text-brand-orange">GYE</span>
             </span>
           </Link>
           <p className="mt-4 max-w-xs text-sm text-slate-300">Tu guía deportiva en Guayaquil.</p>

@@ -15,7 +15,7 @@ export default function AuthShell({ title, subtitle, children }: Props) {
         <Link to="/" className="mb-8 flex items-center justify-center gap-3" aria-label="Activa GYE, ir al inicio">
           <img src="/img/logo.png" alt="" className="h-12 w-auto" />
           <span className="text-2xl font-extrabold italic tracking-tight text-white">
-            ACTIVA <span className="text-brand-blue">GYE</span>
+            ACTIVA <span className="text-brand-orange">GYE</span>
           </span>
         </Link>
         <div className="rounded-[1.75rem] bg-white p-8 shadow-xl shadow-navy-900/5 md:p-10">
