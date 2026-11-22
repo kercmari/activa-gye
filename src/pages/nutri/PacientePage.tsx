@@ -6,6 +6,7 @@ import NutriShell from '../../components/nutri/NutriShell';
 import PlanEditor from '../../components/nutri/PlanEditor';
 import FollowupForm from '../../components/nutri/FollowupForm';
 import InvoiceForm from '../../components/nutri/InvoiceForm';
+import TrialProgress from '../../components/nutri/TrialProgress';
 import { imc } from '../../components/panel/ficha';
 import { ACTIVITY_LABELS, GOAL_LABELS, SEX_LABELS, ageFromBirth, formatDate } from '../../components/nutrition/labels';
 import ConfirmDialog from '../../components/profile/ConfirmDialog';
@@ -259,6 +260,8 @@ function PacienteDetalle({ patientId, detail }: { patientId: string; detail: Pat
           <FotoCuerpo url={photoUrl} />
         </div>
       </Card>
+
+      <TrialProgress patientId={patientId} />
 
       <Card title="Calendario" id="calendario-titulo">
         <PlanEditor patientId={patientId} />
