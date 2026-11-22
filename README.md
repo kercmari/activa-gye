@@ -1,6 +1,6 @@
 # Activa GYE
 
-Plataforma para **encontrar dónde hacer deporte en Guayaquil** y **conectar pacientes con nutricionistas**. Funciona como intermediaria, al estilo Uber: el paciente pide atención y un nutricionista la acepta y lo acompaña. No hay IA ni asistente automático: atienden personas.
+Plataforma para **encontrar dónde hacer deporte en Guayaquil** y **conectar pacientes con nutricionistas**. Funciona como intermediaria, al estilo Uber: el paciente pide atención y un nutricionista la acepta y lo acompaña. Quienes atienden son nutricionistas reales.
 
 Proyecto de clase (Fase 5).
 
@@ -17,6 +17,7 @@ Proyecto de clase (Fase 5).
 | **Datos** | ✅ Con base real cuando está conectada | Con Supabase conectado, las cuentas, fichas, fotos, calendarios y pagos se guardan en la base de datos: no se pierden al cambiar de navegador. Sin la conexión (modo de prueba), todo se guarda en el navegador (`localStorage`). |
 | **Lugares** | ✅ Reales | 300 lugares deportivos reales de Guayaquil tomados de **OpenStreetMap**. Precio y horario dicen «Consultar» cuando no hay dato confirmado. |
 | **Backend** (base de datos real) | ✅ Supabase: Auth, Postgres con reglas de seguridad (RLS), fotos en Storage | El esquema está en `supabase/migrations/` y se prueba en local. Cómo publicarlo con una base en la nube: [`docs/entrega/PUESTA-EN-MARCHA.md`](docs/entrega/PUESTA-EN-MARCHA.md). |
+| **Semana gratis** | ✅ Hecha | Al llenar su ficha, el paciente recibe gratis 7 días de comidas y rutinas, armados con plantillas de nutricionista según su IMC, edad, género y objetivo. Los días se abren uno a uno con el progreso diario. Desde el día 8 se suscribe. |
 | **Nutricionistas** | ✅ Construido por fases | El paciente llena su ficha y pide atención; un nutricionista la acepta, arma su calendario y le da seguimiento. Cada fase se enciende desde **Admin → Fases** (ver abajo). Pendientes: [`docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md`](docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md). |
 
 ### ¿Hay conexión con Google para ver las ubicaciones?
@@ -34,8 +35,10 @@ Proyecto de clase (Fase 5).
 - Ver la ficha del lugar con mapa, horario, precios y el botón **Cómo llegar** (observación 1 del profesor).
 - **Comparar** hasta 3 lugares lado a lado.
 - **Crear cuenta** y tener **Mi perfil** con sus datos, favoritos, su plan y su **progreso** (peso, medidas y notas por fecha) (observación 2 del profesor).
+- **Mi plan (semana gratis):** secciones **Hoy** (actividades del día y chequeo «¿Cómo te sientes?», peso y agua), **Agenda** (mes y actividades con hora; días cerrados con candado), **Progreso** (gráficos de ánimo, peso y agua, y % cumplido por día) y **Suscripción**. En el celular tiene barra inferior.
+- **Guía de nutrición** pública: categorías, buscador y tarjetas «✅ Sí / ⛔ Evita».
 - **Nutricionista:** el paciente llena su ficha (datos y foto de cuerpo entero, solo mayores de 18 y con permiso) y pide atención; un nutricionista la acepta.
-- **Panel de administración:** el administrador gestiona lugares, mensajes de contacto y roles de usuarios; el nutricionista toma y responde solicitudes.
+- **Panel de administración:** el administrador gestiona lugares, mensajes de contacto, roles de usuarios, pagos y fases; el nutricionista toma y responde solicitudes, y ambos editan las **plantillas** de la semana gratis y la **guía**.
 
 Las cuentas de prueba (solo para la base local) están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md).
 
@@ -69,9 +72,9 @@ Las cuentas de prueba (solo para la base local) están en [`docs/entrega/CUENTAS
 | **Supabase Auth** | Registro e ingreso con correo y contraseña. |
 | **Supabase Postgres + RLS** | Base de datos PostgreSQL y permisos por fila (un paciente no ve los datos de otro). |
 | **Supabase Storage** | Guardar fotos: la de cuerpo entero es privada; la de los lugares es pública. |
-| **Supabase Edge Functions** | Previsto para los correos (fase 3); todavía no está escrito. |
+| **Supabase Edge Functions** | Función `enviar-correo` para los avisos por correo (fase 3). |
 | **Supabase CLI** | Levantar la base en local con Docker (`npx supabase start`). |
-| **Brevo** (plan gratis) | Correos de aviso y de recuperar contraseña (fase 3). Pendiente de conectar. |
+| **Brevo** (plan gratis) | Envía los correos de aviso (fase 3). Falta crear la cuenta y poner su clave en Supabase. |
 
 ### Pruebas y calidad
 | Herramienta | Para qué |
@@ -79,7 +82,6 @@ Las cuentas de prueba (solo para la base local) están en [`docs/entrega/CUENTAS
 | **Vitest + Testing Library + jsdom** | Pruebas unitarias de pantallas, datos y reglas. |
 | **Playwright** | Pruebas de navegación real (computadora y celular). |
 | **Oxlint** | Revisar el código. |
-| **CodeRabbit** | Revisión automática de *pull requests* con IA (`.coderabbit.yaml`). |
 
 ### Publicación
 | Herramienta | Para qué |
@@ -87,9 +89,6 @@ Las cuentas de prueba (solo para la base local) están en [`docs/entrega/CUENTAS
 | **Cloudflare Workers** (plan gratis) | Hospedar la página (`wrangler.jsonc`). |
 | **Wrangler** | Publicar con `npx wrangler deploy`. |
 | **GitHub** | Guardar el código. |
-
-### Cómo se construyó
-El diseño y el plan se hicieron con **Claude Code**. Las pantallas las programaron agentes de IA (**Claude Haiku**) trabajando en paralelo, y las revisiones las hizo **Claude Opus**. Diseño: [`docs/superpowers/specs/`](docs/superpowers/specs/); plan: [`docs/superpowers/plans/`](docs/superpowers/plans/).
 
 ---
 
@@ -150,16 +149,32 @@ La plataforma se entrega en **3 fases**. Todas se construyen, pero cada una se a
 
 | Fase | Qué incluye |
 |---|---|
-| **1. Ingreso y ficha** | Registro e ingreso reales; panel del paciente con su ficha inicial (nombre, edad, género, peso, estatura, foto de cuerpo entero). Cupo limitado de pacientes. |
-| **2. Nutricionista** | Solicitudes (el primer nutricionista que acepta atiende), notificaciones, tablero, ficha de seguimiento, calendario que el paciente marca como cumplido, suscripción del nutricionista y facturas con pago por transferencia. |
+| **1. Ingreso, ficha y semana gratis** | Registro e ingreso reales; ficha inicial (nombre, edad, género, peso, estatura, alergias, condiciones de salud, foto de cuerpo entero); **semana gratis** de 7 días con Hoy, Agenda, Progreso y chequeo diario. Cupo limitado de pacientes. La guía es pública siempre. |
+| **2. Nutricionista** | Solicitudes (el primer nutricionista que acepta atiende), notificaciones, tablero, ficha de seguimiento, calendario que el paciente marca como cumplido, **suscripción del paciente** ($15 al mes, desde el día 8) y del nutricionista, y facturas con pago por transferencia. |
 | **3. Para todos** | Registro abierto, precios y horarios completos de los lugares, calificaciones y reseñas, reporte de progreso en PDF y correos de aviso. |
+
+### Cómo encender las fases
+
+1. Entra con una cuenta de **administradora**.
+2. Abre **Admin → Fases** (`/admin/fases`).
+3. Marca **Fase 2** y/o **Fase 3** y guarda. El cambio se ve al instante para todos.
+
+Con la fase 2 encendida, el paciente puede suscribirse; cuando la administradora marca pagada su factura en **Admin → Pagos**, se crea su solicitud y una nutricionista la toma y le arma la agenda.
+
+### Semana gratis: cómo se abren los días
+
+- El día 1 se abre al generar la semana.
+- Un día se completa con el **chequeo del día** y **al menos la mitad** de sus actividades marcadas. Entonces el siguiente se abre **al día siguiente** (hora de Guayaquil).
+- Si la persona marca una condición de salud (diabetes, hipertensión, embarazo, enfermedad renal) o la escribe en la ficha, no recibe plan automático: se le pide atención de una nutricionista.
+- Las plantillas de muestra están **pendientes de revisión** y la pantalla lo dice. Una nutricionista las aprueba en **Admin → Plantillas**.
 
 Detalle: [`docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md`](docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md).
 
 ## Próximos pasos
 
 1. Crear el proyecto en Supabase (São Paulo) y publicar con la base real: [`docs/entrega/PUESTA-EN-MARCHA.md`](docs/entrega/PUESTA-EN-MARCHA.md).
-2. Correos de aviso y recuperación de contraseña (función de correo con Brevo).
-3. Confirmar precios y horarios de los lugares principales.
+2. Crear la cuenta de Brevo y poner su clave en Supabase para que salgan los correos de aviso.
+3. Que una nutricionista revise y apruebe las plantillas de la semana gratis.
+4. Confirmar precios y horarios de los lugares principales.
 
 Detalle en [`docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md`](docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md).
