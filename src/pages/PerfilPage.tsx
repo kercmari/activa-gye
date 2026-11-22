@@ -116,6 +116,14 @@ export default function PerfilPage() {
           </div>
         ) : null}
 
+        <div className="mb-8 flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="display text-2xl text-navy-900">Mi panel: ficha, calendario y pagos</h2>
+            <p className="mt-2 text-slate-600">Tu ficha, tu calendario y tus pagos están en un solo lugar.</p>
+          </div>
+          <LinkButton to="/mi-panel" variant="primary" className="shrink-0">Abrir mi panel</LinkButton>
+        </div>
+
         <div role="tablist" aria-label="Secciones de mi perfil" className="mb-8 flex gap-2 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm">
           {TABS.map((t, i) => {
             const active = t.id === tab;
