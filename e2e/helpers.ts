@@ -215,3 +215,46 @@ export async function finalizarAtencion(page: Page, rutaPaciente: string) {
   await expect(page.getByRole('button', { name: 'Finalizar atención', exact: true })).toHaveCount(0);
   await salir(page);
 }
+
+/**
+ * Paciente: suscribe la cuenta a un plan y el admin marca pagada la factura de la suscripción.
+ * La agenda pagada (plan_days) solo se ve con suscripción activa. Idempotente: si ya está
+ * «Suscripción activa», no hace nada; si ya hay un comprobante informado, lo reutiliza.
+ * Deja la sesión cerrada.
+ */
+export async function suscribirPaciente(page: Page, correo: string, clave: string) {
+  await ingresar(page, correo, clave);
+  await expect.poll(() => ruta(page)).toBe('/perfil');
+  await page.goto('/mi-plan/suscripcion');
+  const activa = page.getByText('Suscripción activa', { exact: true }).first();
+  const informado = page.getByText(/Comprobante informado:/).first();
+  const suscribirme = page.getByRole('button', { name: 'Suscribirme', exact: true }).first();
+  await expect(activa.or(informado).or(suscribirme)).toBeVisible();
+  if (await activa.isVisible()) {
+    await salir(page);
+    return;
+  }
+
+  let referencia = `TRF-SUS-${Date.now()}`;
+  if (await informado.isVisible()) {
+    referencia = ((await informado.textContent()) ?? '').match(/TRF-[\w-]+/)?.[0] ?? referencia;
+  } else {
+    await suscribirme.click();
+    await page.getByLabel('Número de comprobante', { exact: true }).fill(referencia);
+    await page.getByRole('button', { name: 'Informar pago', exact: true }).click();
+    await expect(informado).toBeVisible();
+  }
+  await salir(page);
+
+  await ingresar(page, ADMIN.correo, ADMIN.clave);
+  await expect.poll(() => ruta(page)).toBe('/perfil');
+  await page.goto('/admin/pagos');
+  const fila = page.getByRole('row').filter({ hasText: referencia }).first();
+  await expect(fila).toBeVisible();
+  const marcar = fila.getByRole('button', { name: 'Marcar pagada', exact: true });
+  if (await marcar.isVisible()) {
+    await marcar.click();
+    await expect(marcar).toHaveCount(0);
+  }
+  await salir(page);
+}

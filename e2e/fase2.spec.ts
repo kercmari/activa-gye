@@ -12,6 +12,7 @@ import {
   registrar,
   ruta,
   salir,
+  suscribirPaciente,
 } from './helpers';
 
 // Fase 2: paciente pide nutricionista → nutricionista acepta → calendario y seguimiento →
@@ -19,7 +20,8 @@ import {
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(300_000);
 
-test.afterAll(async ({ browser }) => {
+test.afterAll(async ({ browser }, testInfo) => {
+  testInfo.setTimeout(180_000);
   const page = await browser.newPage();
   await conCandadoDeFases(() => fijarFases(page, { phase1: true, phase2: false, phase3: false }));
   await page.close();
@@ -38,6 +40,7 @@ async function abrirHoyEnCalendario(page: Page, titulo: string) {
 }
 
 test('fase 2 completa: solicitud → aceptar → calendario → cumplido → factura → pagada', async ({ page }) => {
+  let rutaPaciente = '';
   await conCandadoDeFases(async () => {
     const stamp = Date.now();
     const nombrePaciente = `Paciente Fase Dos ${stamp}`;
@@ -65,7 +68,7 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
 
     // Si la suscripción no está activa o el cupo del plan está lleno, el helper lo resuelve.
     await salir(page);
-    const rutaPaciente = await aceptarSolicitudDe(page, nombrePaciente, stamp);
+    rutaPaciente = await aceptarSolicitudDe(page, nombrePaciente, stamp);
     await expectVolver(page);
 
     // 3. Seguimiento y día del plan (hoy).
@@ -83,8 +86,11 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await page.getByRole('button', { name: 'Guardar', exact: true }).click();
     await expect(diaHoy.getByText(titulo, { exact: true })).toBeVisible();
 
-    // 4. Paciente ve el día y lo marca cumplido.
+    // 3b. Suscripción del paciente: la agenda pagada solo se ve con suscripción activa.
     await salir(page);
+    await suscribirPaciente(page, paciente.correo, paciente.clave);
+
+    // 4. Paciente ve el día y lo marca cumplido.
     await ingresar(page, paciente.correo, paciente.clave);
     await expect.poll(() => ruta(page)).toBe('/perfil');
     await abrirHoyEnCalendario(page, titulo);
@@ -134,8 +140,9 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await page.goto('/mi-panel?tab=pagos');
     await expect(page.locator('li, tr, article').filter({ hasText: concepto }).getByText('Pagada', { exact: true })).toBeVisible();
     await salir(page);
-
-    // 9. Nutricionista cierra la atención: libera el cupo del plan para las siguientes pruebas.
-    await finalizarAtencion(page, rutaPaciente);
   });
+
+  // 9. Nutricionista cierra la atención: libera el cupo del plan para las siguientes pruebas.
+  // Fuera del candado: no cambia fases ni cupo, así que no hace falta retener las demás pruebas.
+  await finalizarAtencion(page, rutaPaciente);
 });

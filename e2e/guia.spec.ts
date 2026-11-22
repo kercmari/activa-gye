@@ -7,7 +7,8 @@ import { conCandadoDeFases, fijarFases, ingresar, NUTRI, ruta, salir } from './h
 test.describe.configure({ mode: 'serial' });
 test.setTimeout(180_000);
 
-test.afterAll(async ({ browser }) => {
+test.afterAll(async ({ browser }, testInfo) => {
+  testInfo.setTimeout(180_000);
   const page = await browser.newPage();
   await conCandadoDeFases(() => fijarFases(page, { phase1: true, phase2: false, phase3: false }));
   await page.close();
