@@ -66,6 +66,8 @@ function toIntake(r: IntakeRow): PatientIntake {
     weight_kg: Number(r.weight_kg),
     height_cm: Number(r.height_cm),
     waist_cm: toNum(r.waist_cm),
+    allergies: r.allergies ?? null,
+    conditions: r.conditions ?? [],
   };
 }
 
@@ -174,6 +176,9 @@ async function saveMyIntake(input: PatientIntakeInput): Promise<PatientIntake> {
             health_notes: input.health_notes,
             photo_path: photoPath,
             consent_photo: input.consent_photo,
+            // Semana gratis: solo se cambian si la pantalla los manda.
+            ...(input.allergies !== undefined ? { allergies: input.allergies } : {}),
+            ...(input.conditions !== undefined ? { conditions: input.conditions } : {}),
           },
           { onConflict: 'user_id' },
         )
