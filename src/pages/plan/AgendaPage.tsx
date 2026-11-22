@@ -62,7 +62,7 @@ export default function AgendaPage() {
   const { session } = useAuth();
   const phase2 = usePhase(2);
   const tr = useTrial();
-  const serverTrial = tr.status === 'ok' ? tr.data : null;
+  const serverTrial = !tr.loading && !tr.error ? tr.trial : null;
 
   // Copia local tras marcar un ítem; se descarta sola cuando llega una semana nueva del servidor.
   const [edited, setEdited] = useState<{ base: Trial | null; trial: Trial } | null>(null);
@@ -176,10 +176,10 @@ export default function AgendaPage() {
       </PageHeader>
 
       <section className="mx-auto max-w-6xl px-4 py-8">
-        {tr.status === 'loading' ? (
+        {tr.loading ? (
           <Loading text="Cargando tu agenda…" />
-        ) : tr.status === 'error' ? (
-          <ErrorState message={tr.message} onRetry={tr.reload} />
+        ) : tr.error ? (
+          <ErrorState message={tr.error} onRetry={() => void tr.reload()} />
         ) : (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">

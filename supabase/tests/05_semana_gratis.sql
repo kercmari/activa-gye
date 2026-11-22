@@ -26,6 +26,9 @@ insert into public.patient_intakes (user_id, weight_kg, height_cm, goal, activit
   ('00000000-0000-0000-0000-0000000000e4', 90.0, 175.0, 'mantener', 'moderado', '{}'),
   ('00000000-0000-0000-0000-0000000000e5', 80.0, 170.0, null, 'sedentario', '{diabetes}');
 
+-- Aislar la prueba del contenido real (migración 7): se borran dentro de esta transacción (rollback al final).
+delete from public.plan_templates;
+
 -- Plantillas de prueba: una general y una específica (femenino 18–29, IMC 25–30, bajar de peso).
 insert into public.plan_templates (name, sex, age_min, age_max, bmi_min, bmi_max, goal, kcal_base, status) values
   ('Prueba general', 'cualquiera', 18, 120, 0, 99, null, 2000, 'borrador'),
