@@ -14,10 +14,10 @@ Proyecto de clase (Fase 5).
 | Parte | ¿Está hecha? | Detalle |
 |---|---|---|
 | **Frontend** (lo que ve el usuario) | ✅ Sí, completo y publicado | Todas las pantallas, botones y rutas funcionan. |
-| **Datos** | ✅ Simulados en el navegador | Cuentas, perfil, favoritos, progreso y solicitudes al nutricionista se guardan en el navegador de cada persona (`localStorage`). Si cambias de navegador o borras los datos, se pierden. |
+| **Datos** | ✅ Con base real cuando está conectada | Con Supabase conectado, las cuentas, fichas, fotos, calendarios y pagos se guardan en la base de datos: no se pierden al cambiar de navegador. Sin la conexión (modo de prueba), todo se guarda en el navegador (`localStorage`). |
 | **Lugares** | ✅ Reales | 300 lugares deportivos reales de Guayaquil tomados de **OpenStreetMap**. Precio y horario dicen «Consultar» cuando no hay dato confirmado. |
-| **Backend** (base de datos real) | 🟡 Diseñado, **todavía no conectado** | El esquema de la base de datos está escrito y probado en local (`supabase/migrations/`), pero la página publicada aún no lo usa. |
-| **Nutricionistas** | 🟡 En construcción | Plataforma intermediaria: el paciente llena su ficha y pide atención; un nutricionista la acepta, arma su calendario y le da seguimiento. Se entrega en 3 fases (ver abajo). |
+| **Backend** (base de datos real) | ✅ Supabase: Auth, Postgres con reglas de seguridad (RLS), fotos en Storage | El esquema está en `supabase/migrations/` y se prueba en local. Cómo publicarlo con una base en la nube: [`docs/entrega/PUESTA-EN-MARCHA.md`](docs/entrega/PUESTA-EN-MARCHA.md). |
+| **Nutricionistas** | ✅ Construido por fases | El paciente llena su ficha y pide atención; un nutricionista la acepta, arma su calendario y le da seguimiento. Cada fase se enciende desde **Admin → Fases** (ver abajo). Pendientes: [`docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md`](docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md). |
 
 ### ¿Hay conexión con Google para ver las ubicaciones?
 
@@ -37,7 +37,7 @@ Proyecto de clase (Fase 5).
 - **Nutricionista:** el paciente llena su ficha (datos y foto de cuerpo entero, solo mayores de 18 y con permiso) y pide atención; un nutricionista la acepta.
 - **Panel de administración:** el administrador gestiona lugares, mensajes de contacto y roles de usuarios; el nutricionista toma y responde solicitudes.
 
-Las cuentas de prueba (que solo existen en el simulador) están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md).
+Las cuentas de prueba (solo para la base local) están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md).
 
 ---
 
@@ -61,20 +61,23 @@ Las cuentas de prueba (que solo existen en el simulador) están en [`docs/entreg
 | **OpenStreetMap + Overpass API** | Lugares deportivos reales y el fondo del mapa (`scripts/import-osm.mjs`). |
 | **Enlace de Google Maps** (sin API) | El botón «Cómo llegar». |
 | **Geolocalización del navegador** | «Cerca de mí». |
-| **localStorage** (simulador) | Guardar cuentas y datos mientras no hay backend. |
+| **localStorage** (modo de prueba) | Guardar cuentas y datos cuando no hay Supabase configurado. |
 
-### Backend (preparado, falta conectarlo)
+### Backend
 | Herramienta | Para qué |
 |---|---|
-| **Supabase** (plan gratis) | Base de datos PostgreSQL, inicio de sesión, permisos (RLS) y guardado de fotos. |
+| **Supabase Auth** | Registro e ingreso con correo y contraseña. |
+| **Supabase Postgres + RLS** | Base de datos PostgreSQL y permisos por fila (un paciente no ve los datos de otro). |
+| **Supabase Storage** | Guardar fotos: la de cuerpo entero es privada; la de los lugares es pública. |
+| **Supabase Edge Functions** | Previsto para los correos (fase 3); todavía no está escrito. |
 | **Supabase CLI** | Levantar la base en local con Docker (`npx supabase start`). |
-| **Brevo** (plan gratis) | Correos de aviso y de recuperar contraseña (fase 3). |
+| **Brevo** (plan gratis) | Correos de aviso y de recuperar contraseña (fase 3). Pendiente de conectar. |
 
 ### Pruebas y calidad
 | Herramienta | Para qué |
 |---|---|
-| **Vitest + Testing Library + jsdom** | 94 pruebas unitarias. |
-| **Playwright** | 29 pruebas de navegación real (computadora y celular). |
+| **Vitest + Testing Library + jsdom** | Pruebas unitarias de pantallas, datos y reglas. |
+| **Playwright** | Pruebas de navegación real (computadora y celular). |
 | **Oxlint** | Revisar el código. |
 | **CodeRabbit** | Revisión automática de *pull requests* con IA (`.coderabbit.yaml`). |
 
@@ -112,9 +115,13 @@ npx wrangler deploy  # publica en Cloudflare (necesita sesión de wrangler)
 Base de datos en local (opcional, necesita Docker):
 
 ```bash
-npx supabase start   # levanta la base y aplica supabase/migrations/
-npx supabase stop    # la apaga
+cp .env.example .env.local   # luego pon ahí la URL y la clave anon que muestra «npx supabase start»
+npx supabase start           # levanta la base y aplica supabase/migrations/
+npx supabase db reset        # vuelve a crear la base y carga lugares y cuentas de prueba locales
+npx supabase stop            # la apaga
 ```
+
+Sin `.env.local`, la página funciona en modo de prueba (datos en el navegador). Las cuentas de prueba están en [`docs/entrega/CUENTAS-DE-PRUEBA.md`](docs/entrega/CUENTAS-DE-PRUEBA.md). Para publicar con una base en la nube, sigue [`docs/entrega/PUESTA-EN-MARCHA.md`](docs/entrega/PUESTA-EN-MARCHA.md).
 
 ---
 
@@ -125,7 +132,7 @@ src/
   pages/          pantallas (inicio, lugares, perfil, nutrición, admin…)
   components/     piezas reutilizables (encabezado, tarjetas, mapa, formularios)
   data/types.ts   el «contrato» de datos: lo que la página puede pedir
-  data/mock/      el simulador que cumple ese contrato hoy
+  data/mock/      el modo de prueba (sin Supabase) que cumple ese contrato
   auth/           sesión y protección de páginas por rol
   lib/            utilidades (Cómo llegar, horarios, distancia, guía nutricional)
 supabase/         esquema de la base de datos real
@@ -133,7 +140,7 @@ e2e/              pruebas de navegación
 docs/entrega/     evidencia para el PDF (observaciones, capturas, guion del video)
 ```
 
-**Para conectar el backend** solo hay que crear `src/data/supabase/` cumpliendo el mismo contrato (`src/data/types.ts`) y cambiar una línea en `src/data/index.ts`. Las pantallas no cambian.
+`src/data/supabase/` es la conexión con Supabase: cumple el mismo contrato (`src/data/types.ts`) que el modo de prueba (`src/data/mock/`). `src/data/index.ts` elige una u otra: Supabase si hay `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`. Las pantallas no cambian.
 
 ---
 
@@ -151,9 +158,8 @@ Detalle: [`docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md`
 
 ## Próximos pasos
 
-1. Crear el proyecto gratis en Supabase y conectar los datos reales (las cuentas ya no se perderán al cambiar de navegador).
-2. Panel del nutricionista: solicitudes, notificaciones, seguimiento, calendario y suscripción.
-3. Correo real de recuperación de contraseña.
-4. Confirmar precios y horarios de los lugares principales.
+1. Crear el proyecto en Supabase (São Paulo) y publicar con la base real: [`docs/entrega/PUESTA-EN-MARCHA.md`](docs/entrega/PUESTA-EN-MARCHA.md).
+2. Correos de aviso y recuperación de contraseña (función de correo con Brevo).
+3. Confirmar precios y horarios de los lugares principales.
 
 Detalle en [`docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md`](docs/entrega/PENDIENTES-Y-PROXIMOS-PASOS.md).

@@ -1,17 +1,18 @@
 # Cuentas de prueba
 
-Estas cuentas sirven para el video y las capturas de la entrega.
+Estas cuentas son **solo para la base de datos local** (la que corre en tu computadora con `npx supabase start`). Se crean al ejecutar `npx supabase db reset`, junto con los lugares.
 
-**Importante:** en esta versión (simulador en el navegador) las cuentas solo existen en el navegador donde se usan. Se crean solas la primera vez que se abre la página. No llegan a otros navegadores ni a otros equipos. Cuando se conecte Supabase, se crearán con el mismo correo y la misma contraseña en el proyecto real.
+**No existen en la nube.** La base publicada solo tiene los lugares (ver [`PUESTA-EN-MARCHA.md`](PUESTA-EN-MARCHA.md), paso 4). Las contraseñas de abajo son conocidas por cualquiera que lea este archivo, así que no sirven para nada real y no deben usarse en la página publicada.
 
 | Rol | Correo | Contraseña | Qué se ve |
 |---|---|---|---|
-| Admin | `admin@activagye.test` | `ActivaAdmin2026!` | Nombre "Administración Activa GYE". Panel de administración y cambio de roles de otras cuentas (no puede cambiar el suyo). |
-| Nutricionista | `nutri@activagye.test` | `ActivaNutri2026!` | Nombre "Nutricionista de prueba". Panel de nutrición: puede tomar y responder solicitudes. |
-| Usuario | `usuario@activagye.test` | `ActivaUser2026!` | Nombre "Usuario de prueba". Fecha de nacimiento 10/05/2000, objetivo "bajar de peso" y 4 registros de progreso de las últimas 4 semanas (peso de 78 kg a 76,5 kg). |
+| Admin | `admin@activagye.test` | `ActivaAdmin2026!` | Nombre «Administración Activa GYE». Panel de administración, cambio de roles de otras cuentas (no puede cambiar el suyo) y Admin → Fases. |
+| Nutricionista | `nutri@activagye.test` | `ActivaNutri2026!` | Nombre «Nutricionista de prueba». Tablero, bolsa de solicitudes y pacientes. |
+| Paciente | `usuario@activagye.test` | `ActivaUser2026!` | Nombre «Usuario de prueba». Fecha de nacimiento 10/05/2000 y progreso de peso de las últimas semanas. |
 
-Notas para el video:
+Notas para probar:
 
-- Para ver el progreso y la guía de nutrición, entra con la cuenta de usuario.
+- Para ver el panel del paciente (ficha, calendario, pagos), entra con la cuenta de paciente.
 - Para ver el panel del nutricionista, entra con la cuenta de nutricionista.
-- Un registro nuevo siempre crea una cuenta con rol usuario.
+- Un registro nuevo siempre crea una cuenta con rol paciente.
+- Al empezar, solo la fase 1 está encendida. Enciende la 2 o la 3 desde Admin → Fases para probarlas.
