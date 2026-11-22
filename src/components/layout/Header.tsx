@@ -102,10 +102,10 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-navy-900 text-white shadow-lg shadow-navy-900/10">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-        <Link to="/" className="flex shrink-0 items-center gap-3" aria-label="Activa GYE, ir al inicio">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4">
+        <Link to="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Activa GYE, ir al inicio">
           <img src="/img/logo.png" alt="" className="h-11 w-auto" />
-          <span className="text-xl font-extrabold italic tracking-tight">
+          <span className="truncate text-lg font-extrabold italic tracking-tight sm:text-xl">
             ACTIVA <span className="text-brand-orange">GYE</span>
           </span>
         </Link>
@@ -118,7 +118,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <LinkButton to="/deportes" variant="primary" size="md" className="!hidden xl:!inline-flex">
             Explorar actividades <span aria-hidden="true">→</span>
           </LinkButton>
