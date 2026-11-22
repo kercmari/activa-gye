@@ -22,6 +22,8 @@ const MENSAJES: Record<string, string> = {
   ROL_PROTEGIDO: 'No puedes cambiar tu rol desde aquí.',
   CUPO_LLENO: 'Por ahora no hay cupos para nuevos pacientes. Inténtalo más adelante.',
   FASE_NO_ACTIVA: 'Esta función aún no está habilitada.',
+  REQUIERE_NUTRICIONISTA: 'Por tus condiciones de salud, una nutricionista debe revisar tu caso. Pide atención directa desde «Nutricionista».',
+  SIN_PLANTILLA: 'Todavía no hay un plan disponible para tu perfil. Pide atención a una nutricionista.',
   FALTA_FICHA: 'Primero completa tu ficha para pedir un nutricionista.',
   YA_TIENES_SOLICITUD: 'Ya tienes una solicitud en curso.',
   SIN_SUSCRIPCION: 'Necesitas una suscripción activa para aceptar pacientes.',

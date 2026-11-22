@@ -229,7 +229,11 @@ async function setPlanDayDone(id: string, done: boolean, note: string | null): P
 async function listPlans(): Promise<SubscriptionPlan[]> {
   // Las políticas de RLS dejan ver solo los planes activos, salvo al admin (que ve todos).
   const rows = unwrap(
-    await supabase.from('subscription_plans').select('*').order('sort', { ascending: true }),
+    await supabase
+      .from('subscription_plans')
+      .select('*')
+      .eq('audience', 'nutricionista')
+      .order('sort', { ascending: true }),
   ) as PlanRow[];
   return rows.map(toPlan);
 }
