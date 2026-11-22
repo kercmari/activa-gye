@@ -13,6 +13,9 @@ vi.mock('../../data', () => ({
   repo: {
     getMyIntake: vi.fn(),
     getIntakePhotoUrl: vi.fn(),
+    listMyInvoices: vi.fn(),
+    listProgress: vi.fn(),
+    listPlanDays: vi.fn(),
   },
 }));
 
@@ -40,6 +43,9 @@ beforeEach(() => {
   vi.mocked(usePhase).mockReturnValue(true);
   vi.mocked(repo.getMyIntake).mockResolvedValue(null);
   vi.mocked(repo.getIntakePhotoUrl).mockResolvedValue(null);
+  vi.mocked(repo.listMyInvoices).mockResolvedValue([]);
+  vi.mocked(repo.listProgress).mockResolvedValue([]);
+  vi.mocked(repo.listPlanDays).mockResolvedValue([]);
 });
 
 describe('MiPanelPage', () => {
@@ -48,7 +54,8 @@ describe('MiPanelPage', () => {
 
     expect(screen.getByRole('tab', { name: 'Pagos' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Mi ficha' })).toHaveAttribute('aria-selected', 'false');
-    expect(await screen.findByText('En construcción.')).toBeInTheDocument();
+    expect(await screen.findByText('No tienes cobros.')).toBeInTheDocument();
+    expect(repo.listMyInvoices).toHaveBeenCalled();
   });
 
   it('con fase 2 apagada, Calendario muestra Próximamente', async () => {
@@ -57,7 +64,7 @@ describe('MiPanelPage', () => {
 
     expect(await screen.findByTestId('fase-2-bloqueada')).toBeInTheDocument();
     expect(screen.getByText('Próximamente')).toBeInTheDocument();
-    expect(screen.queryByText('En construcción.')).not.toBeInTheDocument();
+    expect(repo.listPlanDays).not.toHaveBeenCalled();
   });
 
   it('por defecto muestra Mi ficha y saluda por el primer nombre', async () => {
