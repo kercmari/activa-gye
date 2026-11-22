@@ -70,35 +70,59 @@ Lista de los botones y enlaces de cada página: qué hacen, a dónde llevan y si
 | **Recuperar**: Volver a ingresar | Abre ingresar | `/ingresar` | Sí |
 | **Mi perfil**: Editar perfil / Editar | Abre la edición | `/perfil/editar` | Sí, con Volver |
 | **Mi perfil**: Salir | Cierra la sesión | `/` ✓ | Sí |
-| **Mi perfil**: pestañas (Datos, Progreso, Plan) | Cambia de pestaña | Misma página | Sí |
-| **Mi perfil**: Nueva solicitud / Ver guía completa | Abre nutrición | `/nutricion/nueva` o `/nutricion/:id` | Sí |
+| **Mi perfil**: pestañas | Cambia de pestaña | Misma página | Sí |
+| **Mi perfil**: Llenar mi ficha / Mi plan | Abre el panel del paciente | `/mi-panel` (la pestaña Plan y Progreso de `/perfil` se retiraron) | Sí |
 | **Editar perfil**: Guardar | Guarda y vuelve al perfil | `/perfil` ✓ | Sí |
 | **Editar perfil**: Borrar mi cuenta | Pide confirmar y borra la cuenta | `/` | Sí, con Cancelar en la confirmación |
-| **Progreso**: borrar registro | Pide confirmar y borra el registro | Misma página | Sí |
 
-## Nutrición
+## Nutrición (página informativa) y ficha
+
+La guía antigua (`/nutricion/nueva`, `/nutricion/:id`) se retiró. `/nutricion` queda como página «Cómo funciona».
 
 | BOTÓN | ACCIÓN | DESTINO | ¿PUEDE REGRESAR? |
 |---|---|---|---|
-| **Nutrición**: Empezar | Abre el formulario | `/nutricion/nueva` ✓ | Sí, con Volver |
-| **Nutrición**: tarjeta de solicitud | Abre la guía | `/nutricion/:id` | Sí |
-| **Formulario**: Siguiente / Volver (pasos) | Avanza o retrocede un paso | Mismo formulario | Sí |
-| **Formulario**: Enviar | Envía la solicitud | `/nutricion/:id` ✓ | Sí |
-| **Formulario**: Quitar foto | Quita la foto elegida | Misma página | Sí |
-| **Formulario**: Completar mi perfil | Abre la edición del perfil | `/perfil/editar` | Sí |
-| **Guía**: Ver lugares (cada actividad) | Abre los lugares del deporte | `/lugares?deporte=…` | Sí |
-| **Guía**: Volver a mi perfil | Abre el perfil en la pestaña Plan | `/perfil?tab=plan` | Sí |
-| **Guía**: Volver a nutrición | Abre Nutrición | `/nutricion` | Sí |
-| **Guía**: Volver | Regresa | Página anterior | Sí |
+| **Nutrición**: Ir a mi ficha | Abre la ficha inicial | `/mi-panel?tab=ficha` ✓ (`e2e/nutricion.spec.ts`) | Sí, con Volver |
+| `/nutricion/nueva` | Ruta retirada | «No encontramos esta página» ✓ | Sí, con el menú |
+
+## Mi panel del paciente (fases 1–3)
+
+| BOTÓN | ACCIÓN | DESTINO | ¿PUEDE REGRESAR? |
+|---|---|---|---|
+| **Mi ficha**: Elegir foto / Quitar foto | Elige o quita la foto de cuerpo entero | Misma página | Sí |
+| **Mi ficha**: Guardar mi ficha | Guarda la ficha y muestra «Ficha guardada» | Misma página ✓ (`fase1`) | Sí |
+| **Calendario y progreso** / **Pagos** (fase 2 apagada) | Muestran «Próximamente» | Misma página ✓ (`fase1`) | Sí, con Volver |
+| **Mi nutricionista**: Solicitar nutricionista | Envía la solicitud | Misma página ✓ (`fase2`) | Sí |
+| **Mi nutricionista**: Cancelar solicitud | Cancela la solicitud abierta | Misma página | Sí |
+| **Pagos**: Informar pago | Reporta el comprobante de una factura | Misma página ✓ (`fase2`) | Sí |
+| **Calendario**: marcar día cumplido | Registra el progreso del día | Misma página ✓ (`fase2`) | Sí |
+| **Tu reseña**: Enviar reseña (lugar y nutricionista) | Guarda la calificación y el comentario | Misma página ✓ (`fase3`) | Sí |
+| **Reporte**: Descargar PDF | Abre el diálogo de imprimir (PDF) | `/mi-panel/reporte` ✓ (`fase3`) | Sí, con Volver |
+
+## Nutricionista (fase 2)
+
+| BOTÓN | ACCIÓN | DESTINO | ¿PUEDE REGRESAR? |
+|---|---|---|---|
+| **Campana** de notificaciones | Muestra los avisos sin leer | `/notificaciones` ✓ (`fase2`) | Sí, con Volver |
+| **Solicitudes**: Aceptar | Toma al paciente | `/nutri/pacientes/:id` ✓ (`fase2`, `fase3`) | Sí, con Volver |
+| **Solicitudes**: Ver mi suscripción | Va a elegir o pagar el plan | `/nutri/suscripcion` ✓ (`fase2`, `fase3`) | Sí, con Volver |
+| **Suscripción**: Elegir este plan / Informar pago | Crea la factura del plan y reporta el pago | Misma página ✓ (`fase2`) | Sí |
+| **Paciente**: Nuevo seguimiento / nuevo día | Agrega seguimiento o día del plan | Misma página ✓ (`fase2`) | Sí |
+| **Paciente**: Marcar pagada (factura) | Marca la factura como pagada | Misma página ✓ (`fase2`) | Sí |
+| **Paciente**: Finalizar atención | Cierra la atención (pide confirmar) | `/nutri` ✓ (`fase2`, `fase3`) | Sí, con Cancelar en la confirmación |
+
+## Admin (fases 1–3)
+
+| BOTÓN | ACCIÓN | DESTINO | ¿PUEDE REGRESAR? |
+|---|---|---|---|
+| **Admin → Fases**: casillas de fase 1, 2, 3 y cupo; Guardar cambios | Cambia las fases y el cupo | `/admin/fases` ✓ (`fase1`, `fase2`, `fase3`) | Sí, con el menú del panel |
+| **Admin → Pagos**: Marcar pagada | Marca la suscripción o factura pagada | `/admin/pagos` ✓ (`fase2`) | Sí, con Volver |
+| **Admin → Datos de lugares** | Lista los lugares con datos faltantes | `/admin/datos-lugares` ✓ (`fase3`) | Sí, con Volver |
 
 ## Panel (nutricionista y admin)
 
 | BOTÓN | ACCIÓN | DESTINO | ¿PUEDE REGRESAR? |
 |---|---|---|---|
-| **Panel**: tarjetas (solicitudes, lugares, mensajes, usuarios) | Abre la lista | `/admin/nutricion`, `/admin/lugares`, `/admin/mensajes`, `/admin/usuarios` | Sí, con el menú del panel |
-| **Panel nutrición**: filtros | Filtra la lista | Misma página | Sí |
-| **Panel nutrición**: Ver | Abre la solicitud | `/admin/nutricion/:id` ✓ | Sí, con Volver |
-| **Solicitud**: Tomar solicitud | Asigna la solicitud a quien la toma | Misma página | Sí |
+| **Panel**: tarjetas (pagos, fases, lugares, mensajes, usuarios, datos de lugares) | Abre la lista | `/admin/pagos`, `/admin/fases`, `/admin/lugares`, `/admin/mensajes`, `/admin/usuarios`, `/admin/datos-lugares` | Sí, con el menú del panel |
 | **Panel lugares**: Nuevo lugar | Abre el formulario | `/admin/lugares/nuevo` ✓ | Sí, con Cancelar |
 | **Panel lugares**: Editar | Abre el lugar | `/admin/lugares/:id` | Sí, con Cancelar |
 | **Panel lugares**: Anterior / Siguiente / filtros | Cambia de página o filtro | Misma página | Sí |
