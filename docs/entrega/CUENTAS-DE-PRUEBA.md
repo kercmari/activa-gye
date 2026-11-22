@@ -9,6 +9,7 @@ Estas cuentas son **solo para la base de datos local** (la que corre en tu compu
 | Admin | `admin@activagye.test` | `ActivaAdmin2026!` | Nombre «Administración Activa GYE». Panel de administración, cambio de roles de otras cuentas (no puede cambiar el suyo) y Admin → Fases. |
 | Nutricionista | `nutri@activagye.test` | `ActivaNutri2026!` | Nombre «Nutricionista de prueba». Tablero, bolsa de solicitudes y pacientes. |
 | Paciente | `usuario@activagye.test` | `ActivaUser2026!` | Nombre «Usuario de prueba». Fecha de nacimiento 10/05/2000 y progreso de peso de las últimas semanas. |
+| Paciente (semana gratis) | `semana@activagye.test` | `ActivaSemana2026!` | Nombre «Paciente semana demo». Semana gratis completada (días 1–7 con chequeo) y muro de suscripción para el día 8. |
 
 Notas para probar:
 

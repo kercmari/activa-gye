@@ -682,6 +682,42 @@ insert into public.progress_entries (user_id, entry_date, weight_kg, active_minu
   ('00000000-0000-4000-8000-000000000003', current_date - 14, 76.9, 40, 'Natación', null),
   ('00000000-0000-4000-8000-000000000003', current_date - 7, 76.5, 50, 'Funcional', null);
 
+-- SEMANA GRATIS DEMO: paciente semana@activagye.test (ActivaSemana2026!). Solo local: seed.sql no se sube a la nube.
+-- Ficha llena, semana asignada con assign_trial y los días 1–7 completados (con chequeo), para probar el muro de pago.
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change)
+values ('00000000-0000-4000-8000-000000000004', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'semana@activagye.test',
+  crypt('ActivaSemana2026!', gen_salt('bf')), now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"full_name":"Paciente semana demo","birth_date":"1995-08-20"}'::jsonb,
+  now(), now(), '', '', '', '');
+
+insert into auth.identities (id, provider_id, user_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+values (gen_random_uuid(), '00000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-000000000004',
+  jsonb_build_object('sub', '00000000-0000-4000-8000-000000000004', 'email', 'semana@activagye.test', 'email_verified', true, 'phone_verified', false),
+  'email', now(), now(), now());
+
+update public.profiles set sex = 'femenino', goal = 'bajar_peso' where id = '00000000-0000-4000-8000-000000000004';
+insert into public.patient_intakes (user_id, weight_kg, height_cm, goal, activity_level, conditions)
+  values ('00000000-0000-4000-8000-000000000004', 70.0, 165.0, 'bajar_peso', 'ligero', '{}');
+
+-- assign_trial como la paciente (la base decide la plantilla; aquí: mujer de 30 años, IMC 25,7).
+select set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-4000-8000-000000000004', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.assign_trial();
+reset role;
+
+-- Fechas pasadas: el día 1 empezó hace 7 días y el día 7 fue ayer. Todo completado, con chequeo cada día.
+update public.trials set started_on = public.gye_today() - 7 where user_id = '00000000-0000-4000-8000-000000000004';
+update public.trial_days set unlocked_on = public.gye_today() - (8 - day_number),
+  completed_at = ((public.gye_today() - (8 - day_number)) + time '20:00') at time zone 'America/Guayaquil'
+  where user_id = '00000000-0000-4000-8000-000000000004';
+update public.trial_items set done_at = ((public.gye_today() - (8 - day_number)) + at_time) at time zone 'America/Guayaquil'
+  where user_id = '00000000-0000-4000-8000-000000000004';
+insert into public.daily_checkins (user_id, checkin_date, mood, weight_kg, water_glasses, note)
+  select '00000000-0000-4000-8000-000000000004', public.gye_today() - (8 - n), 4, round((70.6 - n * 0.2)::numeric, 1), 6, null
+  from generate_series(1, 7) as n;
+
 select set_config('activa.allow_role_change', 'off', true);
 
 commit;
