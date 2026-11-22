@@ -150,7 +150,7 @@ function InvoicesTab() {
           action={{ label: 'Ver todas', onClick: () => setFilter('todas') }}
         />
       ) : (
-        <div className="overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
+        <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
           <table className="min-w-full text-left text-sm">
             <caption className="sr-only">Facturas</caption>
             <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
@@ -243,7 +243,7 @@ function SubscriptionsTab() {
   }
 
   return (
-    <div className="overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
+    <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
       <table className="min-w-full text-left text-sm">
         <caption className="sr-only">Suscripciones</caption>
         <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
@@ -434,7 +434,7 @@ function PlansTab() {
       ) : null}
 
       {plans.length > 0 ? (
-        <div className="overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
+        <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
           <table className="min-w-full text-left text-sm">
             <caption className="sr-only">Planes de suscripción</caption>
             <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">

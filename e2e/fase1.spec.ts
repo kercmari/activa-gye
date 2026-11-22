@@ -55,6 +55,7 @@ test('admin pone cupo = pacientes actuales → registro dice «no hay cupos» �
 
     // Cuántos cupos quedan (la página de registro los muestra con la fase 3 apagada).
     await page.goto('/registro');
+    await expect(page.getByText(/Cupos disponibles:|Por ahora no hay cupos/)).toBeVisible();
     const cuposTexto = await page.getByText(/Cupos disponibles:/).textContent();
     const libres = cuposTexto ? Number(cuposTexto.replace(/\D/g, '')) : 0;
 
