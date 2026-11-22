@@ -27,6 +27,11 @@ insert into public.patient_intakes (user_id, weight_kg, height_cm) values
   ('00000000-0000-0000-0000-0000000000c1', 82.0, 170.0),
   ('00000000-0000-0000-0000-0000000000c2', 70.0, 165.0);
 
+-- Desde la migración 6 la agenda pagada exige suscripción activa del paciente (§6.8).
+insert into public.patient_subscriptions (patient_id, plan_id, status, current_period_end)
+select p.id, (select sp.id from public.subscription_plans sp where sp.name = 'Seguimiento mensual'), 'activa', now() + interval '30 days'
+  from (values ('00000000-0000-0000-0000-0000000000c1'::uuid), ('00000000-0000-0000-0000-0000000000c2'::uuid)) as p(id);
+
 -- ============ Solicitud y aceptación (fase 2 encendida) ============
 do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
