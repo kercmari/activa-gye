@@ -1,0 +1,32 @@
+/* Estilos de impresión (Guardar como PDF). Se importa desde ReportePage. */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  html,
+  body,
+  main,
+  section,
+  article {
+    background: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .print-card {
+    border: 1px solid #cbd5e1;
+    break-inside: avoid;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+}
