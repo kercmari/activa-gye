@@ -58,3 +58,10 @@ describe('PerfilPage', () => {
     expect(repo.listFavorites).toHaveBeenCalled();
   });
 });
+
+describe('PerfilPage · Mi panel', () => {
+  it('tiene el enlace Abrir mi panel a /mi-panel', async () => {
+    renderAt('/perfil');
+    expect(await screen.findByRole('link', { name: 'Abrir mi panel' })).toHaveAttribute('href', '/mi-panel');
+  });
+});

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { repo } from '../data';
 import { useAuth } from '../auth/AuthContext';
+import { useSettings } from '../auth/SettingsContext';
 import AuthShell from '../components/profile/AuthShell';
 import PasswordField from '../components/profile/PasswordField';
 import { ageFrom, todayISO } from '../components/profile/labels';
@@ -54,7 +55,10 @@ function validateRegistro(v: Values): Errors {
 
 export default function RegistroPage() {
   const { refresh } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
+  const sinCupo = !settings.phase3 && settings.patients_count >= settings.patient_limit;
+  const cuposLibres = Math.max(0, settings.patient_limit - settings.patients_count);
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
@@ -78,7 +82,7 @@ export default function RegistroPage() {
         birth_date: values.birth,
       });
       await refresh();
-      navigate('/perfil?bienvenida=1', { replace: true });
+      navigate('/mi-panel', { replace: true });
     } catch (error) {
       setServerError(errorMessage(error));
       setBusy(false);
@@ -88,8 +92,16 @@ export default function RegistroPage() {
   const strength = passwordStrength(values.password);
 
   return (
-    <AuthShell title="Crear cuenta" subtitle="Guarda tus favoritos, tu plan y tu progreso en un solo lugar.">
+    <AuthShell title="Crear cuenta" subtitle="Guarda tus favoritos y tu ficha en un solo lugar.">
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+        {sinCupo ? (
+          <p role="alert" className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+            Por ahora no hay cupos para nuevos pacientes.
+          </p>
+        ) : null}
+        {!settings.phase3 && !sinCupo ? (
+          <p className="text-sm font-semibold text-slate-600">Cupos disponibles: {cuposLibres}</p>
+        ) : null}
         <TextField
           label="Nombre completo"
           autoComplete="name"
@@ -176,7 +188,7 @@ export default function RegistroPage() {
           </p>
         ) : null}
 
-        <button type="submit" disabled={busy} className={buttonClasses({ variant: 'primary', size: 'lg' }, 'w-full')}>
+        <button type="submit" disabled={busy || sinCupo} className={buttonClasses({ variant: 'primary', size: 'lg' }, 'w-full')}>
           {busy ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
       </form>

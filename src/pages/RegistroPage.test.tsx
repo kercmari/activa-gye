@@ -6,6 +6,14 @@ import { repo, type Session } from '../data';
 import { AuthProvider } from '../auth/AuthContext';
 import RegistroPage from './RegistroPage';
 
+const ajustes = vi.hoisted(() => ({
+  settings: { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 0 },
+}));
+
+vi.mock('../auth/SettingsContext', () => ({
+  useSettings: () => ({ settings: ajustes.settings, loading: false, reload: async () => {} }),
+}));
+
 vi.mock('../data', () => ({
   repo: { getSession: vi.fn(), onAuthChange: vi.fn(() => () => {}), signUp: vi.fn() },
 }));
@@ -22,7 +30,7 @@ let current: Session | null = null;
 
 function LocationProbe() {
   const loc = useLocation();
-  return <p>PERFIL:{loc.search}</p>;
+  return <p>PANEL:{loc.pathname}</p>;
 }
 
 function renderPage() {
@@ -31,7 +39,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/registro']}>
         <Routes>
           <Route path="/registro" element={<RegistroPage />} />
-          <Route path="/perfil" element={<LocationProbe />} />
+          <Route path="/mi-panel" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>,
@@ -48,6 +56,7 @@ async function fillBase(user: ReturnType<typeof userEvent.setup>, confirm: strin
 
 describe('RegistroPage', () => {
   beforeEach(() => {
+    ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 0 };
     current = null;
     vi.mocked(repo.getSession).mockImplementation(async () => current);
     vi.mocked(repo.signUp).mockReset();
@@ -67,15 +76,30 @@ describe('RegistroPage', () => {
     expect(repo.signUp).not.toHaveBeenCalled();
   });
 
-  it('registro exitoso navega a /perfil?bienvenida=1', async () => {
+  it('registro exitoso navega a /mi-panel', async () => {
     const user = userEvent.setup();
     renderPage();
     await fillBase(user, 'Clave-segura-1');
     await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
-    expect(await screen.findByText('PERFIL:?bienvenida=1')).toBeInTheDocument();
+    expect(await screen.findByText('PANEL:/mi-panel')).toBeInTheDocument();
     expect(repo.signUp).toHaveBeenCalledWith(
       expect.objectContaining({ email: 'ana@correo.com', full_name: 'Ana Pérez', birth_date: '2000-05-10' }),
     );
+  });
+
+  it('cupo lleno deshabilita Crear cuenta', async () => {
+    ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 5 };
+    renderPage();
+    expect(screen.getByText('Por ahora no hay cupos para nuevos pacientes.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeDisabled();
+    expect(repo.signUp).not.toHaveBeenCalled();
+  });
+
+  it('muestra los cupos disponibles cuando la fase 3 está apagada', async () => {
+    ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2 };
+    renderPage();
+    expect(screen.getByText('Cupos disponibles: 3')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeEnabled();
   });
 });
