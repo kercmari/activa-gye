@@ -3,6 +3,15 @@
 begin;
 select plan(30);
 
+-- ============ Estado de partida (dentro de la transacción: el rollback lo deshace) ============
+-- La base local puede traer pacientes de otras corridas (e2e). El cupo se mide contra ese número,
+-- no contra valores absolutos, y la fase se fija aquí en vez de confiar en la fila viva.
+select set_config('test.base', (select count(*)::text from public.profiles where role = 'usuario'), true);
+update public.app_settings
+   set phase1 = true, phase2 = false, phase3 = false,
+       patient_limit = current_setting('test.base')::int + 5
+ where id = 1;
+
 -- ============ Datos de prueba (como superusuario; el trigger crea los perfiles) ============
 insert into auth.users (id, aud, role, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000a1', 'authenticated', 'authenticated', 'admin@test.local', '{"full_name":"Admin Prueba"}'),
@@ -13,11 +22,18 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data) values
 update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000a1';
 update public.profiles set role = 'nutricionista' where id in ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000b2');
 
+-- Desde la migración 4 aceptar una solicitud exige suscripción activa (SIN_SUSCRIPCION).
+insert into public.subscriptions (nutritionist_id, plan_id, status, current_period_end)
+select n.id, (select p.id from public.subscription_plans p where p.name = 'Básico'), 'activa', now() + interval '30 days'
+  from (values ('00000000-0000-0000-0000-0000000000b1'::uuid), ('00000000-0000-0000-0000-0000000000b2'::uuid)) as n(id);
+
 -- ============ 1-5. Configuración pública ============
-select is(public.get_public_settings()->>'phase1', 'true', 'fase 1 activa por defecto');
-select is(public.get_public_settings()->>'phase2', 'false', 'fase 2 apagada por defecto');
-select is(public.get_public_settings()->>'phase3', 'false', 'fase 3 apagada por defecto');
-select is(public.get_public_settings()->>'patient_limit', '5', 'cupo de 5 pacientes por defecto');
+select is(public.get_public_settings()->>'phase1', 'true', 'fase 1 activa al empezar la prueba');
+select is(public.get_public_settings()->>'phase2', 'false', 'fase 2 apagada al empezar la prueba');
+select is(public.get_public_settings()->>'phase3', 'false', 'fase 3 apagada al empezar la prueba');
+select is((select column_default from information_schema.columns
+            where table_schema = 'public' and table_name = 'app_settings' and column_name = 'patient_limit'),
+  '5', 'la columna patient_limit tiene 5 pacientes por defecto');
 
 do $$ begin set local role anon; end $$;
 select lives_ok($$ select public.get_public_settings() $$, 'anon puede leer la configuración pública');
@@ -63,7 +79,8 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select is((public.admin_set_settings(true, false, false, 5))->>'patient_limit', '5', 'el admin restablece el cupo a 5');
+select is((public.admin_set_settings(true, false, false, current_setting('test.base')::int + 5))->>'patient_limit',
+  (current_setting('test.base')::int + 5)::text, 'el admin restablece el cupo a 5 sobre los pacientes existentes');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 -- Menor de 18 (16-17 años: se registra, pero no puede subir foto).

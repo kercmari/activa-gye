@@ -17,6 +17,11 @@ insert into auth.users (id, aud, role, email, raw_user_meta_data) values
 update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000a1';
 update public.profiles set role = 'nutricionista' where id in ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000b2');
 
+-- Desde la migración 4 aceptar una solicitud exige suscripción activa (SIN_SUSCRIPCION).
+insert into public.subscriptions (nutritionist_id, plan_id, status, current_period_end)
+select n.id, (select p.id from public.subscription_plans p where p.name = 'Básico'), 'activa', now() + interval '30 days'
+  from (values ('00000000-0000-0000-0000-0000000000b1'::uuid), ('00000000-0000-0000-0000-0000000000b2'::uuid)) as n(id);
+
 -- Fichas (el paciente la llenaría en la app; aquí como superusuario).
 insert into public.patient_intakes (user_id, weight_kg, height_cm) values
   ('00000000-0000-0000-0000-0000000000c1', 82.0, 170.0),
