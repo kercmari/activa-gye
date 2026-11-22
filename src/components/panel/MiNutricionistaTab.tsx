@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { repo, type CareRequest, type Followup, type NutritionistPublic } from '../../data';
 import { useAuth } from '../../auth/AuthContext';
+import ReviewsSection from '../reviews/ReviewsSection';
 import { useAsync } from '../profile/useAsync';
 import ConfirmDialog from '../profile/ConfirmDialog';
 import { formatDateLong } from '../profile/labels';
@@ -211,6 +212,10 @@ function Aceptada({ request, onChanged }: { request: CareRequest; onChanged: () 
           ) : null}
         </div>
       </section>
+
+      {nutri.status === 'ok' && nutri.data ? (
+        <ReviewsSection target="nutricionista" targetId={nutri.data.id} canReview title="Califica a tu nutricionista" />
+      ) : null}
     </div>
   );
 }
