@@ -2,6 +2,7 @@ import { AtSign, ExternalLink, Globe, Heart, MessageCircle, Phone } from 'lucide
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import PlaceMap from '../components/places/PlaceMap';
+import ReviewsSection from '../components/reviews/ReviewsSection';
 import { SERVICE_OPTIONS } from '../components/places/placeOptions';
 import BackButton from '../components/ui/BackButton';
 import { Button, buttonClasses } from '../components/ui/Button';
@@ -292,6 +293,10 @@ export default function LugarPage() {
             <PlaceMap places={[place]} center={[place.lat, place.lng]} zoom={16} color="orange" className="h-72" />
           </div>
         </aside>
+      </div>
+
+      <div className="mt-10">
+        <ReviewsSection target="lugar" targetId={place.id} canReview title="Reseñas" />
       </div>
     </section>
   );

@@ -14,6 +14,10 @@ vi.mock('../data', () => ({
     listSectors: async () => [{ id: 'norte', name: 'Norte', sort: 1 }],
     isFavorite: async () => false,
     toggleFavorite: async () => true,
+    getRating: async () => ({ average: null, count: 0 }),
+    listReviews: async () => [],
+    saveReview: async () => { throw new Error('no usado'); },
+    deleteMyReview: async () => {},
   },
 }));
 
