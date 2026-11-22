@@ -16,6 +16,11 @@ const STATUS: Record<InvoiceStatus, { label: string; tone: BadgeTone }> = {
   anulada: { label: 'Anulada', tone: 'slate' },
 };
 
+/** Etiquetas de tipo de factura que el paciente debe reconocer (los demás tipos se muestran sin etiqueta). */
+const KIND_LABELS: Partial<Record<Invoice['kind'], string>> = {
+  suscripcion_paciente: 'Suscripción del paciente',
+};
+
 const REF_MIN = 4;
 const REF_MAX = 100;
 
@@ -87,6 +92,7 @@ function InvoiceRow({ invoice, onReported }: { invoice: Invoice; onReported: (in
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="font-extrabold text-navy-900">{invoice.concept}</p>
+          {KIND_LABELS[invoice.kind] ? <p className="text-sm font-bold text-brand-orange-dark">{KIND_LABELS[invoice.kind]}</p> : null}
           <p className="mt-1 text-sm text-slate-600">{payee}</p>
           <p className="text-sm text-slate-500">{formatDateLong(invoice.created_at.slice(0, 10))}</p>
         </div>

@@ -42,6 +42,11 @@ function formatMoney(amount: number): string {
   return `$${amount.toFixed(2)}`;
 }
 
+/** Etiquetas de tipo de factura (los demás tipos se muestran sin etiqueta). */
+const INVOICE_KIND_LABELS: Partial<Record<Invoice['kind'], string>> = {
+  suscripcion_paciente: 'Suscripción del paciente',
+};
+
 const thClass = 'px-4 py-3 font-extrabold';
 const tdClass = 'px-4 py-3 text-navy-900';
 
@@ -173,7 +178,12 @@ function InvoicesTab() {
                     <td className={tdClass}>{formatDate(invoice.created_at)}</td>
                     <td className={tdClass}>{invoice.payer_name || '—'}</td>
                     <td className={tdClass}>{invoice.payee_id === null ? 'Plataforma' : invoice.payee_name || '—'}</td>
-                    <td className={tdClass}>{invoice.concept}</td>
+                    <td className={tdClass}>
+                      {invoice.concept}
+                      {INVOICE_KIND_LABELS[invoice.kind] ? (
+                        <span className="mt-1 block text-xs font-bold text-brand-orange-dark">{INVOICE_KIND_LABELS[invoice.kind]}</span>
+                      ) : null}
+                    </td>
                     <td className={`${tdClass} font-extrabold`}>{formatMoney(invoice.amount)}</td>
                     <td className={tdClass}><Badge tone={status.tone}>{status.label}</Badge></td>
                     <td className={tdClass}>{invoice.payment_reference || '—'}</td>
