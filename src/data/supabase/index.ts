@@ -4,6 +4,7 @@
  * - catalog.ts  (D1): sectores, deportes, lugares, admin de lugares.
  * - care.ts     (D2): ficha, solicitudes, pacientes, tablero, avisos.
  * - plan.ts     (D3): seguimientos, calendario, pagos, reseñas, lugares incompletos.
+ * - trial.ts    (D4): semana gratis, chequeos, suscripción del paciente, plantillas, guía.
  * Lo que una parte todavía no implementa responde SIN_BASE.
  */
 import type { Repo } from '../types';
@@ -12,5 +13,6 @@ import { accountPart } from './account';
 import { catalogPart } from './catalog';
 import { carePart } from './care';
 import { planPart } from './plan';
+import { trialPart } from './trial';
 
-export const supabaseRepo: Repo = withFallback({ ...catalogPart, ...accountPart, ...carePart, ...planPart });
+export const supabaseRepo: Repo = withFallback({ ...catalogPart, ...accountPart, ...carePart, ...planPart, ...trialPart });

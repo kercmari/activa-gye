@@ -1,8 +1,9 @@
 /**
  * MAPA DE RUTAS (dueño: orquestador). Las tareas NO editan este archivo: solo reemplazan sus páginas.
- * Coincide con §8 de docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md.
+ * Coincide con §8 de docs/superpowers/specs/2026-11-21-activa-gye-fases-backend-design.md
+ * y §4 de docs/superpowers/specs/2026-11-21-semana-gratis-design.md.
  */
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AuthProvider } from './auth/AuthContext';
 import { SettingsProvider } from './auth/SettingsContext';
 import { RequireAuth, RequireGuest, RequireRole } from './auth/guards';
@@ -40,6 +41,15 @@ import AdminDatosLugaresPage from './pages/admin/AdminDatosLugaresPage';
 import AdminPagosPage from './pages/admin/AdminPagosPage';
 import AdminMensajesPage from './pages/admin/AdminMensajesPage';
 import AdminUsuariosPage from './pages/admin/AdminUsuariosPage';
+import AdminPlantillasPage from './pages/admin/AdminPlantillasPage';
+import AdminPlantillaPage from './pages/admin/AdminPlantillaPage';
+import AdminGuiaPage from './pages/admin/AdminGuiaPage';
+import GuiaPage from './pages/GuiaPage';
+import PlanShell from './components/plan/PlanShell';
+import HoyPage from './pages/plan/HoyPage';
+import AgendaPage from './pages/plan/AgendaPage';
+import ProgresoPage from './pages/plan/ProgresoPage';
+import SuscribirmePage from './pages/plan/SuscribirmePage';
 
 export function AppRoutes() {
   return (
@@ -56,6 +66,7 @@ export function AppRoutes() {
         <Route path="lugares/:id" element={<LugarPage />} />
         <Route path="comparar" element={<CompararPage />} />
         <Route path="nutricion" element={<NutricionPage />} />
+        <Route path="guia" element={<GuiaPage />} />
 
         <Route element={<RequireGuest />}>
           <Route path="ingresar" element={<IngresarPage />} />
@@ -69,6 +80,13 @@ export function AppRoutes() {
           <Route path="mi-panel" element={<MiPanelPage />} />
           <Route path="mi-panel/reporte" element={<ReportePage />} />
           <Route path="notificaciones" element={<NotificacionesPage />} />
+          <Route path="mi-plan" element={<PlanShell />}>
+            <Route index element={<Navigate to="hoy" replace />} />
+            <Route path="hoy" element={<HoyPage />} />
+            <Route path="agenda" element={<AgendaPage />} />
+            <Route path="progreso" element={<ProgresoPage />} />
+            <Route path="suscripcion" element={<SuscribirmePage />} />
+          </Route>
         </Route>
 
         <Route element={<RequireRole roles={['nutricionista', 'admin']} />}>
@@ -76,6 +94,9 @@ export function AppRoutes() {
           <Route path="nutri/solicitudes" element={<SolicitudesPage />} />
           <Route path="nutri/pacientes/:id" element={<PacientePage />} />
           <Route path="nutri/suscripcion" element={<SuscripcionPage />} />
+          <Route path="admin/plantillas" element={<AdminPlantillasPage />} />
+          <Route path="admin/plantillas/:id" element={<AdminPlantillaPage />} />
+          <Route path="admin/guia" element={<AdminGuiaPage />} />
         </Route>
         <Route element={<RequireRole roles={['admin']} />}>
           <Route path="admin" element={<AdminHomePage />} />

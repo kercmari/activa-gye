@@ -31,3 +31,4 @@ test-results
 playwright-report
 supabase/.temp
 work/out
+work/ref-base-vital/

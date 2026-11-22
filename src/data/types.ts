@@ -140,6 +140,10 @@ export interface PatientIntake {
   photo_path: string | null;
   consent_photo: boolean;
   consent_at: string | null;
+  /** Semana gratis: alergias o comidas que no come (≤ 300). */
+  allergies?: string | null;
+  /** Semana gratis: si no está vacío, no hay plan automático (REQUIERE_NUTRICIONISTA). */
+  conditions?: HealthCondition[];
   created_at: string;
   updated_at: string;
 }
@@ -161,6 +165,9 @@ export interface PatientIntakeInput {
   remove_photo: boolean;
   /** Obligatorio si hay foto (nueva o guardada). Solo mayores de 18. */
   consent_photo: boolean;
+  /** Semana gratis (opcional: si no viene, no cambia). */
+  allergies?: string | null;
+  conditions?: HealthCondition[];
 }
 
 /* ------------------------------------------------------------------ FASE 2: intermediación (care_requests) */
@@ -287,7 +294,7 @@ export interface Invoice {
   payer_id: string;
   /** null = la plataforma (suscripciones). */
   payee_id: string | null;
-  kind: 'suscripcion' | 'consulta';
+  kind: 'suscripcion' | 'consulta' | 'suscripcion_paciente';
   subscription_id: string | null;
   concept: string;
   amount: number; // USD
@@ -319,6 +326,124 @@ export type ReviewInput = Pick<Review, 'target_type' | 'target_id' | 'stars' | '
 export interface RatingSummary { average: number | null; count: number }
 export interface NutritionistPublic { id: string; full_name: string; rating: RatingSummary }
 
+/* ------------------------------------------------------------------ SEMANA GRATIS (estilo Base Vital)
+ * Diseño: docs/superpowers/specs/2026-11-21-semana-gratis-design.md
+ * BD:     docs/superpowers/plans/2026-11-21-db-contrato-semana.md
+ */
+
+export type HealthCondition = 'diabetes' | 'hipertension' | 'embarazo' | 'renal' | 'otra';
+export type TrialItemKind = 'comida' | 'rutina' | 'habito';
+export type TemplateStatus = 'borrador' | 'aprobada';
+
+export interface TrialItem {
+  id: string;
+  at_time: string; // 'HH:MM'
+  kind: TrialItemKind;
+  title: string;
+  detail: string | null;
+  done: boolean;
+}
+
+export interface TrialDay {
+  day_number: number; // 1–7
+  /** true = abierto hoy (unlocked_on <= hoy en Guayaquil). */
+  unlocked: boolean;
+  /** null = cerrado; fecha futura = se abre ese día. 'AAAA-MM-DD'. */
+  unlocked_on: string | null;
+  completed_at: string | null;
+  items_total: number;
+  items_done: number;
+  /** Vacío si el día está cerrado (para el paciente). */
+  items: TrialItem[];
+}
+
+export interface Trial {
+  template_name: string;
+  template_status: TemplateStatus;
+  author_name: string;
+  kcal_target: number;
+  portion_factor: number;
+  started_on: string;
+  /** Hoy en Guayaquil ('AAAA-MM-DD'), según la base. */
+  today: string;
+  /** Primer día abierto sin completar (null si no hay). */
+  current_day: number | null;
+  /** El día 7 está completado. */
+  finished: boolean;
+  days: TrialDay[]; // siempre 7, orden 1..7
+}
+
+export interface DailyCheckin {
+  id: string;
+  checkin_date: string;
+  mood: number; // 1–5
+  weight_kg: number | null;
+  water_glasses: number | null;
+  note: string | null;
+  created_at: string;
+}
+export type CheckinInput = Pick<DailyCheckin, 'mood' | 'weight_kg' | 'water_glasses' | 'note'>;
+
+export type TemplateSex = 'cualquiera' | 'femenino' | 'masculino';
+export interface PlanTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  sex: TemplateSex;
+  age_min: number;
+  age_max: number;
+  bmi_min: number;
+  bmi_max: number;
+  goal: Goal | null; // null = cualquiera
+  kcal_base: number;
+  author_name: string;
+  status: TemplateStatus;
+  is_fallback: boolean;
+  items_count: number;
+}
+export type PlanTemplateInput = Omit<PlanTemplate, 'id' | 'items_count'> & { id?: string };
+
+export interface PlanTemplateItem {
+  id: string;
+  template_id: string;
+  day_number: number;
+  at_time: string; // 'HH:MM'
+  kind: TrialItemKind;
+  title: string;
+  detail: string | null;
+  sort: number;
+}
+export type PlanTemplateItemInput = Omit<PlanTemplateItem, 'id'> & { id?: string };
+
+export type GuideCategory =
+  | 'hidratacion' | 'porciones' | 'antes_entrenar' | 'despues_entrenar' | 'comer_fuera' | 'descanso' | 'compras';
+export interface GuideEntry {
+  id: string;
+  slug: string;
+  category: GuideCategory;
+  title: string;
+  summary: string | null;
+  objective: string | null;
+  do_items: string[];
+  avoid_items: string[];
+  steps: string[];
+  source: string | null;
+  published: boolean;
+  sort: number;
+  updated_at: string;
+}
+export type GuideEntryInput = Omit<GuideEntry, 'id' | 'updated_at'> & { id?: string };
+
+export interface PatientSubscription {
+  id: string;
+  plan_id: string;
+  plan_name: string;
+  monthly_price: number;
+  status: SubscriptionStatus;
+  current_period_end: string | null;
+  created_at: string;
+}
+
 export interface ContactInput { name: string; email: string; subject: string; message: string }
 export interface ContactMessage extends ContactInput { id: string; read: boolean; created_at: string }
 
@@ -344,6 +469,7 @@ export class AppError extends Error {
  * FALTA_FICHA (pedir nutricionista sin ficha), YA_TIENES_SOLICITUD, SIN_SUSCRIPCION (nutricionista sin suscripción activa),
  * CUPO_PLAN_LLENO (nutricionista sin cupo en su plan), YA_TIENES_SUSCRIPCION, NO_ES_TU_PACIENTE, NO_PERMITIDO,
  * SIN_BASE (función que necesita Supabase).
+ * Semana gratis: REQUIERE_NUTRICIONISTA (ficha con condiciones de salud), SIN_PLANTILLA.
  */
 export interface Repo {
   // Catálogo (público)
@@ -459,4 +585,42 @@ export interface Repo {
   deleteMyReview(id: string): Promise<void>;
   /** Admin: lugares sin precio o sin horario. */
   adminListIncompletePlaces(): Promise<Place[]>;
+
+  // ---------------------------------------------------------------- Semana gratis (fase 1)
+  /** Mi semana gratis (null si aún no se generó). */
+  getMyTrial(): Promise<Trial | null>;
+  /** Genera (o devuelve) mi semana. Errores: FALTA_FICHA, REQUIERE_NUTRICIONISTA, SIN_PLANTILLA, FASE_NO_ACTIVA. */
+  startMyTrial(): Promise<Trial>;
+  /** Marca/desmarca un ítem de un día abierto. Devuelve la semana actualizada. */
+  setTrialItemDone(itemId: string, done: boolean): Promise<Trial>;
+  /** Nutricionista asignado o admin. */
+  getPatientTrial(patientId: string): Promise<Trial | null>;
+  getTodayCheckin(): Promise<DailyCheckin | null>;
+  /** Guarda (o reemplaza) el chequeo de hoy. */
+  saveTodayCheckin(input: CheckinInput): Promise<DailyCheckin>;
+  /** Chequeos de los últimos `days` días, fecha ascendente. patientId = yo o mi paciente. */
+  listCheckins(patientId: string, days: number): Promise<DailyCheckin[]>;
+
+  // ---------------------------------------------------------------- Suscripción del paciente (fase 2)
+  /** Planes con audience 'paciente' activos. (listPlans devuelve solo los de nutricionista.) */
+  listPatientPlans(): Promise<SubscriptionPlan[]>;
+  getMyPatientSubscription(): Promise<PatientSubscription | null>;
+  /** Crea suscripción pendiente + factura 'suscripcion_paciente'. */
+  choosePatientPlan(planId: string): Promise<Invoice>;
+
+  // ---------------------------------------------------------------- Plantillas (nutricionista/admin)
+  adminListTemplates(): Promise<PlanTemplate[]>;
+  adminGetTemplate(id: string): Promise<{ template: PlanTemplate; items: PlanTemplateItem[] } | null>;
+  adminSaveTemplate(input: PlanTemplateInput): Promise<PlanTemplate>;
+  adminDeleteTemplate(id: string): Promise<void>;
+  adminSaveTemplateItem(input: PlanTemplateItemInput): Promise<PlanTemplateItem>;
+  adminDeleteTemplateItem(id: string): Promise<void>;
+
+  // ---------------------------------------------------------------- Guía (pública)
+  /** Publicadas, por categoría y sort. */
+  listGuide(): Promise<GuideEntry[]>;
+  /** Nutricionista/admin: incluye no publicadas. */
+  adminListGuide(): Promise<GuideEntry[]>;
+  adminSaveGuideEntry(input: GuideEntryInput): Promise<GuideEntry>;
+  adminDeleteGuideEntry(id: string): Promise<void>;
 }

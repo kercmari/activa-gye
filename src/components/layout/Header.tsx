@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
   { to: '/deportes', label: 'Explorar deportes' },
   { to: '/lugares', label: 'Buscar lugares' },
   { to: '/nutricion', label: 'Nutricionista' },
+  { to: '/guia', label: 'Guía' },
   { to: '/contacto', label: 'Contacto' },
 ] as const;
 
@@ -30,6 +31,7 @@ function AccountLinks({ session, onSignOut, onNavigate }: { session: Session; on
   return (
     <>
       <Link to="/perfil" className={itemClass} onClick={onNavigate}>Mi perfil</Link>
+      <Link to="/mi-plan" className={itemClass} onClick={onNavigate}>Mi plan</Link>
       <Link to="/mi-panel" className={itemClass} onClick={onNavigate}>Mi panel</Link>
       <Link to="/notificaciones" className={itemClass} onClick={onNavigate}>Notificaciones</Link>
       {canSeePanel(session) ? (
