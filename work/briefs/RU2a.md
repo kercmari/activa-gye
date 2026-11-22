@@ -1,0 +1,12 @@
+# RU2a — REVISOR (opus) — Pantallas del paciente
+**Reglas:** solo revisar: nunca edites, nunca commit, nunca push. Sigue `work/TOKEN-PROTOCOL.md` (regla 3). **Máximo 15 minutos: escribe el informe a los 12 aunque no hayas terminado** (lo no revisado va en «no revisado»).
+**Hallazgos:** `work/out/RU2a/report.md`
+**Lee:** `work/out/HALLAZGOS-R2.md` (hallazgos de la ronda 1), `work/out/XT2/report.md`, `work/out/XU2a/report.md`, `work/out/XU2b/report.md`, `work/out/E2E-R2-final.txt` (suite e2e completa ya medida por el orquestador sobre este mismo main) y `work/out/gate-*.txt`. Diseño: `docs/superpowers/specs/2026-11-21-semana-gratis-design.md`; contrato BD: `docs/superpowers/plans/2026-11-21-db-contrato-semana.md`.
+**Alcance (solo esto):** Como `semana@activagye.test` y como un paciente nuevo, a 360 y 1280 px: `/mi-plan/hoy`, `/mi-plan/agenda`, `/mi-plan/progreso`, `/mi-plan/suscripcion` (H2, H3) y `/guia`. Compara la Agenda con `work/ref-base-vital/`.
+**NO corras** `npx playwright test` completo, ni `db reset`/`start`/`stop`, ni lint/build/vitest (ya están medidos en `work/out/gate-*.txt`). Si necesitas navegador: `npm run -s build && npx vite preview --port $E2E_PORT --strictPort --host 127.0.0.1 &` (TU puerto) y como mucho UNA spec concreta o un script de Playwright corto; mata tu preview al terminar. Para SQL: `psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"` con transacciones que terminan en `rollback`. Cuentas: `docs/entrega/CUENTAS-DE-PRUEBA.md`.
+**Intenta romper:**
+- «Invalid Date» o fechas raras en cualquier pantalla del paciente.
+- Suscripción vencida (prepárala con psql en una transacción que NO hagas rollback solo si luego la deshaces a mano; mejor usa un paciente creado por ti) → aviso + «Suscribirme» funciona.
+- Botones sin acción, pantallas sin salida, barra inferior tapando contenido, scroll horizontal a 360 px.
+**Veredicto:** `## Verdict: **SHIP**` o `## Verdict: **DO NOT SHIP**` (inglés, exacto). DO NOT SHIP solo por: un paciente ve ítems de un día cerrado o datos de otro; agenda pagada sin suscripción; alguien con condición de salud recibe plan automático; borrador presentado como firmado; pago marcable por quien no debe; botón sin acción; pantalla sin salida; crash; gate o e2e rojo; texto falso visible. Luego `HOTFIX NOW` / `BLOCKING` (archivo:línea + cómo reproducir + arreglo sugerido, con área `[sql]` `[paciente]` `[nutri]` `[admin]` `[guia]` `[e2e]`) / `non-blocking` / `no revisado`.
+**Última línea:** `NEXT: el orquestador lee RU2a.`

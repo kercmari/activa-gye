@@ -32,3 +32,4 @@ playwright-report
 supabase/.temp
 work/out
 work/ref-base-vital/
+__pycache__/
