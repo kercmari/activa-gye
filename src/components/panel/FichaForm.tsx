@@ -1,6 +1,6 @@
 /** Formulario «Mi ficha»: datos básicos, medidas, objetivo, notas y foto opcional. */
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
-import { repo, type PatientIntake, type Profile } from '../../data';
+import { repo, type HealthCondition, type PatientIntake, type Profile } from '../../data';
 import { ACTIVITY_OPTIONS, GOAL_OPTIONS, SEX_OPTIONS, ageFromBirth } from '../nutrition/labels';
 import { todayISO } from '../profile/labels';
 import { useAsync } from '../profile/useAsync';
@@ -8,7 +8,10 @@ import { TextArea, TextField, SelectField } from '../ui/Field';
 import { Button } from '../ui/Button';
 import { errorMessage } from '../ui/States';
 import FichaFoto from './FichaFoto';
-import { buildIntakeInput, validateFicha, validateFoto, type FichaErrors, type FichaValues } from './ficha';
+import {
+  ALERGIAS_MAX, CONDICIONES, CONDICIONES_NOTA, buildIntakeInput, validateFicha, validateFoto,
+  type FichaErrors, type FichaValues,
+} from './ficha';
 
 interface Props {
   intake: PatientIntake | null;
@@ -31,6 +34,8 @@ export default function FichaForm({ intake, profile, userId, refresh, onSaved }:
     goal: intake?.goal ?? profile.goal ?? '',
     activity: intake?.activity_level ?? profile.activity_level ?? '',
     health_notes: intake?.health_notes ?? '',
+    allergies: intake?.allergies ?? '',
+    conditions: intake?.conditions ?? [],
   }));
   const [errors, setErrors] = useState<FichaErrors>({});
   const [saving, setSaving] = useState(false);
@@ -59,13 +64,21 @@ export default function FichaForm({ intake, profile, userId, refresh, onSaved }:
   const savedUrl = savedPhoto.status === 'ok' ? savedPhoto.data : null;
   const preview = photo?.url ?? (hasSavedPhoto ? savedUrl : null);
 
-  const setText = (key: 'full_name' | 'birth_date' | 'weight' | 'height' | 'waist' | 'health_notes') =>
+  const setText = (key: 'full_name' | 'birth_date' | 'weight' | 'height' | 'waist' | 'health_notes' | 'allergies') =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const value = e.target.value;
       setV((p) => ({ ...p, [key]: value }));
       setErrors((p) => ({ ...p, [key]: undefined }));
       setSaved(false);
     };
+  const toggleCondition = (cond: HealthCondition, checked: boolean) => {
+    setV((p) => ({
+      ...p,
+      conditions: checked ? [...p.conditions.filter((c) => c !== cond), cond] : p.conditions.filter((c) => c !== cond),
+    }));
+    setSaved(false);
+  };
+
   const setChoice = (key: 'sex' | 'goal' | 'activity') => (e: ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setV((p) => ({ ...p, [key]: value }));
@@ -206,6 +219,37 @@ export default function FichaForm({ intake, profile, userId, refresh, onSaved }:
             hint="Alergias, lesiones, medicamentos o cualquier dato que tu nutricionista deba saber. Máximo 1000 caracteres."
           />
         </div>
+        <div className="md:col-span-2">
+          <TextArea
+            label="Alergias o comidas que no comes (opcional)"
+            rows={3}
+            value={v.allergies}
+            onChange={setText('allergies')}
+            error={errors.allergies}
+            hint={`Por ejemplo: maní, mariscos, lactosa, cilantro. Máximo ${ALERGIAS_MAX} caracteres.`}
+          />
+        </div>
+        <fieldset className="md:col-span-2">
+          <legend className="mb-2 block text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">
+            Condiciones de salud (opcional)
+          </legend>
+          <p className="mb-3 text-sm text-slate-500">{CONDICIONES_NOTA}</p>
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {CONDICIONES.map((c) => (
+              <label key={c.value} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-navy-900">
+                <input
+                  type="checkbox"
+                  name="conditions"
+                  value={c.value}
+                  className="h-4 w-4 accent-brand-blue"
+                  checked={v.conditions.includes(c.value)}
+                  onChange={(e) => toggleCondition(c.value, e.target.checked)}
+                />
+                {c.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </fieldset>
 
       <div className="mt-8">

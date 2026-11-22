@@ -98,6 +98,31 @@ describe('FichaTab', () => {
     expect(screen.getByText('Tu estado inicial')).toBeInTheDocument();
   });
 
+  it('envía alergias y condiciones, y tras guardar ofrece Ver mi semana gratis', async () => {
+    vi.mocked(repo.saveMyIntake).mockResolvedValue({ ...SAVED, allergies: 'maní', conditions: ['diabetes'] });
+    renderTab();
+    await screen.findByRole('button', { name: 'Guardar mi ficha' });
+    await fillMedidas();
+    await userEvent.type(screen.getByLabelText(/Alergias o comidas que no comes/), 'maní');
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Diabetes' }));
+    expect(screen.getByText(/una nutricionista arma tu plan en lugar del plan automático/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Guardar mi ficha' }));
+
+    expect(await screen.findByText('Ficha guardada')).toBeInTheDocument();
+    expect(repo.saveMyIntake).toHaveBeenCalledWith(expect.objectContaining({
+      allergies: 'maní',
+      conditions: ['diabetes'],
+    }));
+    const link = screen.getByRole('link', { name: 'Ver mi semana gratis' });
+    expect(link).toHaveAttribute('href', '/mi-plan/hoy');
+  });
+
+  it('no muestra Ver mi semana gratis antes de guardar', async () => {
+    renderTab();
+    await screen.findByRole('button', { name: 'Guardar mi ficha' });
+    expect(screen.queryByRole('link', { name: 'Ver mi semana gratis' })).not.toBeInTheDocument();
+  });
+
   it('menor de 18 no ve el campo de foto', async () => {
     renderTab();
     await screen.findByRole('button', { name: 'Guardar mi ficha' });

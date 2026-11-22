@@ -1,9 +1,19 @@
 /** Reglas y ayudas de «Mi ficha» (sin React). Rangos según el contrato de datos (PatientIntakeInput). */
-import type { ActivityLevel, Goal, PatientIntakeInput, Sex } from '../../data';
+import type { ActivityLevel, Goal, HealthCondition, PatientIntakeInput, Sex } from '../../data';
 
 export const FOTO_TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
 export const FOTO_MAX_BYTES = 5 * 1024 * 1024;
 export const FOTO_ERROR = 'La foto debe ser JPG, PNG o WebP de hasta 5 MB.';
+/** Condiciones de salud que pasan el plan a una nutricionista (semana gratis). */
+export const CONDICIONES: { value: HealthCondition; label: string }[] = [
+  { value: 'diabetes', label: 'Diabetes' },
+  { value: 'hipertension', label: 'Hipertensión' },
+  { value: 'embarazo', label: 'Embarazo' },
+  { value: 'renal', label: 'Enfermedad renal' },
+  { value: 'otra', label: 'Otra' },
+];
+export const CONDICIONES_NOTA = 'Si marcas alguna, una nutricionista arma tu plan en lugar del plan automático.';
+export const ALERGIAS_MAX = 300;
 export const CONSENTIMIENTO_FOTO = 'Acepto que mi nutricionista vea esta foto para dar seguimiento a mi estado inicial.';
 
 export interface FichaValues {
@@ -16,6 +26,8 @@ export interface FichaValues {
   goal: Goal | '';
   activity: ActivityLevel | '';
   health_notes: string;
+  allergies: string;
+  conditions: HealthCondition[];
 }
 
 export type FichaErrors = Partial<Record<keyof FichaValues | 'consent', string>>;
@@ -49,6 +61,7 @@ export function validateFicha(v: FichaValues, opts: { hasPhoto: boolean; consent
     if (waist === null || waist < 40 || waist > 250) e.waist = 'La cintura debe estar entre 40 y 250 cm.';
   }
   if (v.health_notes.length > 1000) e.health_notes = 'Las notas no pueden pasar de 1000 caracteres.';
+  if (v.allergies.length > ALERGIAS_MAX) e.allergies = `Máximo ${ALERGIAS_MAX} caracteres.`;
   if (opts.hasPhoto && !opts.consent) e.consent = 'Para guardar la foto debes aceptar el consentimiento.';
   return e;
 }
@@ -68,6 +81,8 @@ export function buildIntakeInput(
     goal: v.goal || null,
     activity_level: v.activity || null,
     health_notes: v.health_notes.trim() ? v.health_notes.trim() : null,
+    allergies: v.allergies.trim() ? v.allergies.trim() : null,
+    conditions: v.conditions,
     photo: photo.file,
     remove_photo: photo.remove,
     consent_photo: photo.consent,

@@ -4,6 +4,7 @@ import { repo, type PatientIntake } from '../../data';
 import { useAuth } from '../../auth/AuthContext';
 import { useAsync } from '../profile/useAsync';
 import { ErrorState, Loading } from '../ui/States';
+import { LinkButton } from '../ui/Button';
 import FichaForm from './FichaForm';
 import EstadoInicial from './EstadoInicial';
 
@@ -29,6 +30,14 @@ export default function FichaTab() {
         refresh={refresh}
         onSaved={setSaved}
       />
+      {saved ? (
+        <div className="rounded-[1.75rem] bg-navy-900 p-6 text-white shadow-xl shadow-navy-900/5 md:flex md:items-center md:justify-between md:gap-6 md:p-8">
+          <p className="font-semibold">Tu ficha está lista. Empieza tu semana gratis cuando quieras.</p>
+          <div className="mt-4 md:mt-0">
+            <LinkButton to="/mi-plan/hoy" variant="primary" size="lg">Ver mi semana gratis</LinkButton>
+          </div>
+        </div>
+      ) : null}
       {current ? <EstadoInicial intake={current} profile={session.profile} /> : null}
     </div>
   );
