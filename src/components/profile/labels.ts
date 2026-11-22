@@ -62,3 +62,19 @@ export function ageFrom(iso: string, today: Date = new Date()): number {
 export function formatDateLong(iso: string): string {
   return parseISO(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+
+/**
+ * Fecha larga desde un timestamp completo (p. ej. '2026-12-21T15:00:00+00:00'), en zona America/Guayaquil.
+ * Una fecha sola 'AAAA-MM-DD' se lee como fecha local (sin desfase). Devuelve '' si el texto no es válido.
+ */
+export function formatDateTimeLong(iso: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return formatDateLong(iso);
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return '';
+  return fecha.toLocaleDateString('es-EC', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/Guayaquil',
+  });
+}
