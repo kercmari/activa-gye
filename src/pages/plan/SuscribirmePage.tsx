@@ -3,7 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { repo, type Invoice, type InvoiceStatus, type PatientSubscription, type SubscriptionPlan, type Trial } from '../../data';
 import { useAuth } from '../../auth/AuthContext';
 import PhaseGate from '../../components/PhaseGate';
-import { formatDateLong } from '../../components/profile/labels';
+import { formatDateTimeLong } from '../../components/profile/labels';
 import { useAsync } from '../../components/profile/useAsync';
 import PageHeader from '../../components/ui/PageHeader';
 import Badge, { type BadgeTone } from '../../components/ui/Badge';
@@ -83,24 +83,29 @@ function SuscripcionData({ userId }: { userId: string }) {
 function Suscripcion({ datos, onRetry }: { datos: Datos; onRetry: () => void }) {
   // Factura creada o informada en esta sesión (tiene prioridad sobre la carga inicial).
   const [factura, setFactura] = useState<Invoice | null>(null);
+  // Momento de la carga: fija la comparación de vigencia sin llamar a Date.now() en cada render.
+  const [ahora] = useState(() => Date.now());
   const { sub, planes, trial, facturas } = datos;
 
   const facturaPendiente = facturas.find(
     (inv) => inv.kind === 'suscripcion_paciente' && (inv.status === 'pendiente' || inv.status === 'reportada'),
   );
 
+  // Activa solo con status 'activa' y fecha de fin futura. 'vencida', o 'activa' con fecha pasada/ausente, es vencida.
+  const finMs = sub?.current_period_end ? Date.parse(sub.current_period_end) : Number.NaN;
+  const activa = sub?.status === 'activa' && Number.isFinite(finMs) && finMs > ahora;
+  const vencida = !activa && (sub?.status === 'vencida' || sub?.status === 'activa');
+
   return (
     <div className="space-y-6">
       <ResumenSemana trial={trial} />
 
-      {sub?.status === 'activa' ? (
+      {activa && sub ? (
         <div className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
           <p className="eyebrow text-brand-orange">Suscripción activa</p>
           <h2 className="display mt-2 text-2xl text-navy-900">{sub.plan_name}</h2>
           <p className="mt-2 text-slate-600">
-            {sub.current_period_end
-              ? `Tu suscripción está activa hasta el ${formatDateLong(sub.current_period_end)}.`
-              : 'Tu suscripción está activa.'}
+            {`Tu suscripción está activa hasta el ${formatDateTimeLong(sub.current_period_end ?? '')}.`}
           </p>
           <div className="mt-6">
             <LinkButton to="/mi-plan/agenda" variant="primary">Ver mi agenda</LinkButton>
@@ -108,6 +113,19 @@ function Suscripcion({ datos, onRetry }: { datos: Datos; onRetry: () => void }) 
         </div>
       ) : factura ? (
         <PagoFactura key={factura.id} invoice={factura} onCambio={setFactura} />
+      ) : vencida ? (
+        <>
+          <div role="status" className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
+            <p className="eyebrow text-brand-orange">Suscripción vencida</p>
+            <p className="mt-2 font-extrabold text-navy-900">
+              {sub?.current_period_end
+                ? `Tu suscripción venció el ${formatDateTimeLong(sub.current_period_end)}.`
+                : 'Tu suscripción ya no está vigente.'}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">Elige un plan para volver a tener tu nutricionista y tu agenda.</p>
+          </div>
+          <PlanesPaciente planes={planes} onFactura={setFactura} onRetry={onRetry} />
+        </>
       ) : sub?.status === 'pendiente' && facturaPendiente ? (
         <PagoFactura key={facturaPendiente.id} invoice={facturaPendiente} onCambio={setFactura} />
       ) : sub?.status === 'pendiente' ? (
@@ -238,7 +256,7 @@ function PagoFactura({ invoice, onCambio }: { invoice: Invoice; onCambio: (inv: 
         <div>
           <p className="eyebrow text-brand-orange">Tu factura</p>
           <p className="mt-2 font-extrabold text-navy-900">{invoice.concept}</p>
-          <p className="mt-1 text-sm text-slate-500">{formatDateLong(invoice.created_at.slice(0, 10))}</p>
+          <p className="mt-1 text-sm text-slate-500">{formatDateTimeLong(invoice.created_at)}</p>
         </div>
         <div className="flex flex-col items-start gap-2 md:items-end">
           <p className="display text-xl text-navy-900">{formatMoney(invoice.amount)}</p>
