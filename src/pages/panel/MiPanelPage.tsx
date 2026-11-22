@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent } from 'react';
-import { useSearchParams } from 'react-router';
-import { Lock } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router';
+import { ArrowRight, Lock } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { usePhase } from '../../auth/SettingsContext';
 import PhaseGate from '../../components/PhaseGate';
@@ -63,6 +63,18 @@ export default function MiPanelPage() {
       />
 
       <section className="mx-auto max-w-6xl px-4 py-10">
+        <Link
+          to="/mi-plan/hoy"
+          className="mb-8 flex items-center justify-between gap-4 rounded-[1.75rem] bg-brand-orange p-6 text-white shadow-xl shadow-navy-900/5 transition-opacity hover:opacity-95"
+        >
+          <span>
+            <span className="eyebrow block text-white/80">Mi plan</span>
+            <span className="display mt-1 block text-2xl text-white">Mi semana gratis</span>
+            <span className="mt-1 block text-sm text-white/90">Comidas y rutinas de 7 días, día a día.</span>
+          </span>
+          <ArrowRight className="h-6 w-6 shrink-0" aria-hidden="true" />
+        </Link>
+
         <div role="tablist" aria-label="Secciones de mi panel" className="mb-8 flex gap-2 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm">
           {TABS.map((t, i) => {
             const active = t.id === tab;

@@ -58,6 +58,21 @@ export default function NutricionPage() {
           )}
         </div>
 
+        <div className="mt-12 flex flex-col gap-4 rounded-[1.75rem] bg-white p-8 shadow-xl shadow-navy-900/5 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="eyebrow text-brand-orange">Semana gratis</p>
+            <h2 className="display mt-2 text-2xl text-navy-900">Empieza tu semana gratis</h2>
+            <p className="mt-2 max-w-xl text-slate-600">
+              7 días de comidas y rutinas armados por nutricionistas según tu peso, edad y objetivo.
+            </p>
+          </div>
+          {session ? (
+            <LinkButton to="/mi-plan/hoy" variant="primary" size="lg">Ir a mi semana gratis</LinkButton>
+          ) : (
+            <LinkButton to="/registro" variant="primary" size="lg">Empezar mi semana gratis</LinkButton>
+          )}
+        </div>
+
         <div className="mt-12 rounded-[1.75rem] bg-navy-900 p-8 text-white shadow-xl shadow-navy-900/10">
           <h2 className="display text-2xl text-white">Para nutricionistas</h2>
           <p className="mt-3 text-slate-200">Atiende pacientes desde tu panel. Suscripción mensual.</p>
