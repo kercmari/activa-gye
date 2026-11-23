@@ -1,174 +1,97 @@
-import { ArrowRight, ChevronRight, MapPin } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { ArrowRight, ClipboardList, Flame, UserCheck } from 'lucide-react';
 import { Link } from 'react-router';
-import ContactForm from '../components/ContactForm';
-import PlaceCard from '../components/places/PlaceCard';
-import SearchCard from '../components/home/SearchCard';
+import { useAuth } from '../auth/AuthContext';
+import { usePhase } from '../auth/SettingsContext';
 import { LinkButton } from '../components/ui/Button';
-import { EmptyState, ErrorState, Loading, errorMessage } from '../components/ui/States';
-import { repo, type Place, type Sector, type Sport } from '../data';
-import { sportIcon } from '../lib/icons';
 
-interface Catalog { sectors: Sector[]; sports: Sport[]; places: Place[] }
-
-/** Lugares recomendados: primero los que tienen horario confirmado, luego por nombre. */
-function pickRecommended(places: Place[]): Place[] {
-  return [...places]
-    .sort((a, b) => (Number(!!b.hours) - Number(!!a.hours)) || a.name.localeCompare(b.name, 'es'))
-    .slice(0, 6);
-}
-
+/** Portada (inicio `/`): Nutrición. Con la fase 2 apagada solo aparece el paso de la ficha, sin «Próximamente». */
 export default function HomePage() {
-  const [data, setData] = useState<Catalog | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { session } = useAuth();
+  const phase2 = usePhase(2);
 
-  const load = useCallback(() => {
-    setLoading(true);
-    setError(null);
-    Promise.all([repo.listSectors(), repo.listSports(), repo.searchPlaces({})])
-      .then(([sectors, sports, places]) => setData({ sectors, sports, places }))
-      .catch((e: unknown) => setError(errorMessage(e)))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const sectorName = (id: string | null) => data?.sectors.find((s) => s.id === id)?.name ?? 'Guayaquil';
-  const sportName = (ids: string[]) => data?.sports.find((s) => s.id === ids[0])?.name ?? 'Deporte';
+  const steps = [
+    { icon: ClipboardList, title: 'Llena tu ficha', text: 'Registra tus datos y una foto de referencia.' },
+    ...(phase2
+      ? [
+          { icon: UserCheck, title: 'Un nutricionista acepta tu solicitud', text: 'Un profesional revisa tu ficha y te acompaña desde ese momento.' },
+          { icon: Flame, title: 'Sigue tu calendario', text: 'Marca cada día cumplido y revisa tu avance con tu nutricionista.' },
+        ]
+      : []),
+  ];
 
   return (
     <>
-      {/* a. Portada */}
+      {/* a. Portada con foto */}
       <section className="relative overflow-hidden bg-navy-900 text-white">
         <img src="/img/hero.jpg" alt="" className="absolute inset-y-0 right-0 h-full w-full object-cover object-[70%_center] opacity-40 md:w-3/5 md:opacity-100" />
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900 via-navy-900/80 to-navy-900/10 md:via-navy-900/60" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-44 pt-14 md:pb-48 md:pt-24">
-          <p className="inline-flex items-center gap-2 rounded-full border border-brand-blue/40 bg-brand-blue/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.2em] text-sky-300">
-            <MapPin className="h-4 w-4" aria-hidden="true" />
-            Tu guía deportiva en Guayaquil
-          </p>
-          <h1 className="display mt-6 max-w-3xl text-5xl md:text-7xl">
-            Encuentra tu espacio, <span className="text-brand-orange">activa</span> tu pasión.
-          </h1>
+        <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-14 md:pb-28 md:pt-24">
+          <p className="eyebrow !text-brand-blue">Nutrición</p>
+          <h1 className="display mt-3 max-w-3xl text-5xl text-white md:text-7xl">Acompañamiento nutricional</h1>
           <p className="mt-6 max-w-xl text-lg text-slate-300">
-            Descubre gimnasios, centros deportivos y actividades físicas en Guayaquil. Encuentra el lugar ideal para comenzar a moverte.
+            Activa GYE conecta pacientes con nutricionistas. Recibe comidas y rutinas según tu peso, edad y objetivo.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <LinkButton to="/lugares" variant="primary" size="lg" iconRight={ArrowRight}>Explorar lugares</LinkButton>
-            <LinkButton to="/conocenos" variant="secondary" size="lg" onDark iconRight={ChevronRight}>Conoce más</LinkButton>
+            {session ? (
+              <LinkButton to="/mi-panel" variant="primary" size="lg" iconRight={ArrowRight}>Ir a mi ficha</LinkButton>
+            ) : (
+              <>
+                <LinkButton to="/registro?tipo=paciente" variant="primary" size="lg" iconRight={ArrowRight}>Soy paciente</LinkButton>
+                <LinkButton to="/registro?tipo=nutricionista" variant="secondary" size="lg" onDark>Soy nutricionista</LinkButton>
+              </>
+            )}
           </div>
         </div>
       </section>
 
-      {/* b. Buscador (se monta sobre el borde del hero) */}
-      <div className="relative z-10 mx-auto -mt-32 max-w-6xl px-4 md:-mt-36">
-        <SearchCard />
-      </div>
+      {/* b. Cómo funciona */}
+      <section className="mx-auto max-w-6xl px-4 py-12">
+        <h2 className="display text-3xl text-navy-900">Cómo funciona</h2>
+        <ol className={`mt-8 grid gap-6 ${steps.length > 1 ? 'md:grid-cols-3' : ''}`}>
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <li key={step.title} className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-brand-blue">
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </span>
+                  <span className="eyebrow text-slate-500">Paso {index + 1}</span>
+                </div>
+                <h3 className="display mt-5 text-xl text-navy-900">{step.title}</h3>
+                <p className="mt-2 text-slate-600">{step.text}</p>
+              </li>
+            );
+          })}
+        </ol>
 
-      {/* c. Deportes */}
-      <section className="mx-auto max-w-6xl px-4 pb-16 pt-16">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div className="mt-12 flex flex-col gap-4 rounded-[1.75rem] bg-white p-8 shadow-xl shadow-navy-900/5 md:flex-row md:items-center md:justify-between">
           <div>
-            <p className="eyebrow">Muévete a tu manera</p>
-            <h2 className="display mt-2 text-4xl text-navy-900 md:text-5xl">Explora por deporte</h2>
-          </div>
-          <p className="max-w-sm text-slate-600">Elige una actividad y mira dónde practicarla en la ciudad.</p>
-        </div>
-
-        {loading && !data ? <div className="mt-10"><Loading /></div> : null}
-        {error && !data ? (
-          <div className="mt-10"><ErrorState message={error} onRetry={load} /></div>
-        ) : null}
-        {data ? (
-          <div className="mt-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-            {data.sports.map((sport) => {
-              const Icon = sportIcon(sport.icon);
-              return (
-                <Link
-                  key={sport.id}
-                  to={`/deportes/${sport.id}`}
-                  className="group relative flex h-40 items-end overflow-hidden rounded-[1.75rem] bg-navy-800 md:h-56"
-                >
-                  <img src={`/img/sports/${sport.id}.jpg`} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy-900 via-navy-900/40 to-transparent" />
-                  <div className="relative flex w-full items-end justify-between gap-2 p-4">
-                    <div>
-                      <Icon className="mb-2 h-6 w-6 text-brand-orange" aria-hidden="true" />
-                      <p className="display text-lg text-white">{sport.name}</p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-white" aria-hidden="true" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        ) : null}
-      </section>
-
-      {/* d. Lugares recomendados */}
-      <section className="mx-auto max-w-6xl px-4 pb-16">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="eyebrow">Selección local</p>
-            <h2 className="display mt-2 text-4xl text-navy-900 md:text-5xl">Lugares recomendados</h2>
-          </div>
-          {data ? (
-            <span className="self-start rounded-full bg-sky-50 px-4 py-2 text-sm font-bold text-sky-tag md:self-auto">
-              {data.places.length} resultados
-            </span>
-          ) : null}
-        </div>
-
-        {loading && !data ? <div className="mt-10"><Loading /></div> : null}
-        {error && !data ? (
-          <div className="mt-10"><ErrorState message={error} onRetry={load} /></div>
-        ) : null}
-        {data && data.places.length === 0 ? (
-          <div className="mt-10">
-            <EmptyState
-              title="Aún no hay lugares publicados"
-              text="Cuando se publiquen lugares, aparecerán aquí."
-              action={{ label: 'Ver todos los lugares', to: '/lugares' }}
-            />
-          </div>
-        ) : null}
-        {data && data.places.length > 0 ? (
-          <>
-            <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {pickRecommended(data.places).map((place) => (
-                <PlaceCard
-                  key={place.id}
-                  place={place}
-                  sectorName={sectorName(place.sector_id)}
-                  sportName={sportName(place.sport_ids)}
-                />
-              ))}
-            </div>
-            <div className="mt-10 flex justify-center">
-              <LinkButton to="/lugares" variant="secondary" iconRight={ArrowRight}>Ver todos los lugares</LinkButton>
-            </div>
-          </>
-        ) : null}
-      </section>
-
-      {/* e. Banda nutricionista */}
-      <section className="bg-brand-blue text-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-12 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="display text-3xl text-white md:text-4xl">¿Quieres un plan de alimentación?</h2>
-            <p className="mt-3 max-w-2xl text-white/90">
-              Cuéntanos tus medidas y objetivo y recibe una guía orientativa. Un nutricionista puede revisar tu caso.
+            <p className="eyebrow text-brand-orange">Semana gratis</p>
+            <h2 className="display mt-2 text-2xl text-navy-900">Empieza tu semana gratis</h2>
+            <p className="mt-2 max-w-xl text-slate-600">
+              7 días de comidas y rutinas armados por nutricionistas según tu peso, edad y objetivo.
             </p>
           </div>
-          <LinkButton to="/nutricion" variant="primary" size="lg" iconRight={ArrowRight} className="shrink-0">
-            Conectar con un nutricionista
-          </LinkButton>
+          {session ? (
+            <LinkButton to="/mi-plan/hoy" variant="primary" size="lg">Ir a mi semana gratis</LinkButton>
+          ) : (
+            <LinkButton to="/registro?tipo=paciente" variant="primary" size="lg">Empezar mi semana gratis</LinkButton>
+          )}
         </div>
-      </section>
 
-      {/* f. Contacto */}
-      <ContactForm id="contacto" />
+        <div className="mt-12 rounded-[1.75rem] bg-navy-900 p-8 text-white shadow-xl shadow-navy-900/10">
+          <h2 className="display text-2xl text-white">Para nutricionistas</h2>
+          <p className="mt-3 text-slate-200">Atiende pacientes desde tu panel. Tu cuenta se revisa antes de activarse.</p>
+          <Link to="/contacto" className="mt-5 inline-block font-bold text-brand-orange hover:underline">
+            Escríbenos para contratar
+          </Link>
+        </div>
+
+        <p role="note" className="mt-10 rounded-2xl bg-slate-100 px-5 py-4 text-sm font-semibold text-slate-600">
+          Activa GYE conecta pacientes con nutricionistas. No da diagnósticos ni consejos automáticos.
+        </p>
+      </section>
     </>
   );
 }
