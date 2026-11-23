@@ -161,6 +161,16 @@ La plataforma se entrega en **3 fases**. Todas se construyen, pero cada una se a
 
 Con la fase 2 encendida, el paciente puede suscribirse; cuando la administradora marca pagada su factura en **Admin → Pagos**, se crea su solicitud y una nutricionista la toma y le arma la agenda.
 
+**Sin el panel de Admin (desde Supabase):** abre **SQL Editor** en el proyecto de Supabase y ejecuta una de estas instrucciones:
+
+```sql
+update public.app_settings set phase2 = true where id = 1;  -- enciende la fase 2
+update public.app_settings set phase3 = true where id = 1;  -- enciende la fase 3
+update public.app_settings set phase2 = false where id = 1; -- la apaga otra vez
+```
+
+Basta con **recargar la página** para ver el cambio. Mientras una fase está apagada, sus vistas **no se ven**: ni enlaces en los menús ni en el pie, ni pestañas, ni botones o pasos «Próximamente». Si alguien abre a mano la dirección de una vista apagada, ve un aviso con salida, no una página en blanco. La base ya bloquea esas funciones por detrás, así que apagar una fase no borra datos.
+
 ### Semana gratis: cómo se abren los días
 
 - El día 1 se abre al generar la semana.

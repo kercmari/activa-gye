@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { ADMIN, conCandadoDeFases, fijarFases, ingresar, ruta } from './helpers';
 
 /** Textos que nunca deben aparecer en una página publicada. */
 const PROHIBIDOS = [/Página en construcción/i, /\bDEMO\b/, /lorem/i];
@@ -132,4 +133,31 @@ test('[landing] sin scroll horizontal a 360 px y el botón de menú está a la v
     expect(ancho, `scrollWidth en ${ruta}`).toBeLessThanOrEqual(360);
     await expect(page.getByRole('button', { name: 'Abrir menú' })).toBeInViewport();
   }
+});
+
+test('con la fase 1 sola, el menú de cuenta no muestra Mi panel, Notificaciones ni Panel nutricionista', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'el menú de cuenta se revisa en escritorio');
+  test.setTimeout(120_000);
+  await conCandadoDeFases(async () => {
+    await fijarFases(page, { phase1: true, phase2: false, phase3: false });
+    await ingresar(page, ADMIN.correo, ADMIN.clave);
+    await expect.poll(() => ruta(page)).toBe('/perfil');
+    await page.goto('/');
+    await page.getByRole('button', { name: /Menú de cuenta de/ }).click();
+    const menu = page.getByRole('menu');
+    await expect(menu.getByRole('link', { name: 'Mi plan' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Mi panel' })).toHaveCount(0);
+    await expect(menu.getByRole('link', { name: 'Notificaciones' })).toHaveCount(0);
+    await expect(menu.getByRole('link', { name: 'Panel nutricionista' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Notificaciones|avisos/i })).toHaveCount(0);
+  });
+});
+
+test('a 1280 px el logo se ve completo: «ACTIVA GYE» sin cortar', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'el logo a 1280 px se revisa en escritorio');
+  await page.goto('/');
+  const texto = page.getByRole('link', { name: 'Activa GYE, ir al inicio' }).locator('span').first();
+  await expect(texto).toBeVisible();
+  const sinCortar = await texto.evaluate((el) => el.scrollWidth <= el.clientWidth && el.textContent?.replace(/\s+/g, ' ').trim() === 'ACTIVA GYE');
+  expect(sinCortar).toBe(true);
 });
