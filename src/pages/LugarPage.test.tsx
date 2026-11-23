@@ -5,7 +5,10 @@ import type { Place } from '../data';
 import { googleDirectionsUrl } from '../lib/directions';
 import LugarPage from './LugarPage';
 
-const { getPlace } = vi.hoisted(() => ({ getPlace: vi.fn() }));
+const { getPlace, fases } = vi.hoisted(() => ({
+  getPlace: vi.fn(),
+  fases: { fase3: false },
+}));
 
 vi.mock('../data', () => ({
   repo: {
@@ -23,6 +26,11 @@ vi.mock('../data', () => ({
 
 vi.mock('../auth/AuthContext', () => ({
   useAuth: () => ({ session: null, loading: false, refresh: async () => {} }),
+}));
+
+vi.mock('../auth/SettingsContext', () => ({
+  usePhase: (n: number) => (n === 3 ? fases.fase3 : true),
+  useSettings: () => ({ settings: { phase1: true, phase2: true, phase3: fases.fase3 }, loading: false, reload: async () => {} }),
 }));
 
 vi.mock('react-leaflet', () => ({
@@ -62,6 +70,7 @@ describe('LugarPage', () => {
   beforeEach(() => {
     getPlace.mockReset();
     getPlace.mockResolvedValue(PLACE);
+    fases.fase3 = false;
   });
 
   it('muestra Cómo llegar con el enlace de Google Maps correcto', async () => {
@@ -77,6 +86,19 @@ describe('LugarPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Guardar en favoritos/ }));
     expect(await screen.findByText('Pantalla de ingreso')).toBeInTheDocument();
     expect(screen.getByTestId('url')).toHaveTextContent('/ingresar?volver=/lugares/p1');
+  });
+
+  it('con fase 3 apagada no muestra la sección de reseñas ni su aviso', async () => {
+    renderAt('/lugares/p1');
+    expect(await screen.findByRole('link', { name: /Cómo llegar/ })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Reseñas' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
+  });
+
+  it('con fase 3 encendida muestra la sección de reseñas', async () => {
+    fases.fase3 = true;
+    renderAt('/lugares/p1');
+    expect(await screen.findByRole('heading', { name: 'Reseñas' })).toBeInTheDocument();
   });
 
   it('lugar inexistente muestra mensaje y enlace de búsqueda', async () => {

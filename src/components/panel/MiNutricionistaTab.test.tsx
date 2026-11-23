@@ -7,6 +7,11 @@ import { useAuth } from '../../auth/AuthContext';
 import MiNutricionistaTab from './MiNutricionistaTab';
 
 vi.mock('../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
+const fases = vi.hoisted(() => ({ fase3: false }));
+vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: (n: number) => (n === 3 ? fases.fase3 : true),
+  useSettings: () => ({ settings: { phase1: true, phase2: true, phase3: fases.fase3 }, loading: false, reload: async () => {} }),
+}));
 vi.mock('../../data', () => ({
   repo: {
     getMyCareRequest: vi.fn(),
@@ -14,6 +19,8 @@ vi.mock('../../data', () => ({
     cancelMyCareRequest: vi.fn(),
     getMyNutritionist: vi.fn(),
     listFollowups: vi.fn(),
+    getRating: vi.fn(async () => ({ average: null, count: 0 })),
+    listReviews: vi.fn(async () => []),
   },
   AppError: class AppError extends Error {
     code: string;
@@ -60,6 +67,7 @@ beforeEach(() => {
   vi.mocked(repo.cancelMyCareRequest).mockResolvedValue(undefined);
   vi.mocked(repo.getMyNutritionist).mockResolvedValue(NUTRI);
   vi.mocked(repo.listFollowups).mockResolvedValue([]);
+  fases.fase3 = false;
 });
 
 describe('MiNutricionistaTab', () => {
@@ -87,5 +95,22 @@ describe('MiNutricionistaTab', () => {
     expect(await screen.findByText('Carla Vélez')).toBeInTheDocument();
     expect(screen.getByText('★ 4,5 (12)')).toBeInTheDocument();
     expect(await screen.findByText('Tu nutricionista aún no registra seguimientos.')).toBeInTheDocument();
+  });
+
+  it('aceptada con fase 3 apagada no muestra las reseñas ni su aviso', async () => {
+    vi.mocked(repo.getMyCareRequest).mockResolvedValue(ACEPTADA);
+    renderTab();
+
+    expect(await screen.findByText('Carla Vélez')).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Califica a tu nutricionista' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Próximamente/)).not.toBeInTheDocument();
+  });
+
+  it('aceptada con fase 3 encendida muestra la sección de reseñas', async () => {
+    fases.fase3 = true;
+    vi.mocked(repo.getMyCareRequest).mockResolvedValue(ACEPTADA);
+    renderTab();
+
+    expect(await screen.findByRole('heading', { name: 'Califica a tu nutricionista' })).toBeInTheDocument();
   });
 });

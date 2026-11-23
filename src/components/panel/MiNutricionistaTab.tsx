@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { repo, type CareRequest, type Followup, type NutritionistPublic } from '../../data';
 import { useAuth } from '../../auth/AuthContext';
+import { usePhase } from '../../auth/SettingsContext';
 import ReviewsSection from '../reviews/ReviewsSection';
 import { useAsync } from '../profile/useAsync';
 import ConfirmDialog from '../profile/ConfirmDialog';
@@ -145,6 +146,7 @@ function Abierta({ request, onChanged }: { request: CareRequest; onChanged: () =
 
 function Aceptada({ request, onChanged }: { request: CareRequest; onChanged: () => void }) {
   const { session } = useAuth();
+  const fase3 = usePhase(3);
   const userId = session?.user.id ?? request.patient_id;
   const nutri = useAsync(() => repo.getMyNutritionist());
   const seguimientos = useAsync(() => repo.listFollowups(userId), [userId]);
@@ -213,7 +215,7 @@ function Aceptada({ request, onChanged }: { request: CareRequest; onChanged: () 
         </div>
       </section>
 
-      {nutri.status === 'ok' && nutri.data ? (
+      {fase3 && nutri.status === 'ok' && nutri.data ? (
         <ReviewsSection target="nutricionista" targetId={nutri.data.id} canReview title="Califica a tu nutricionista" />
       ) : null}
     </div>

@@ -39,7 +39,7 @@ export default function SuscribirmePage() {
     <>
       <PageHeader eyebrow="Mi plan" title="Suscripción" subtitle="Después de tu semana gratis, una nutricionista toma tu caso." back={false} />
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-10">
-        <PhaseGate phase={2} title="Suscripción">
+        <PhaseGate phase={2} title="Suscripción" back={{ to: '/mi-plan', label: 'Volver a mi plan' }}>
           <SuscripcionContent />
         </PhaseGate>
         <div>

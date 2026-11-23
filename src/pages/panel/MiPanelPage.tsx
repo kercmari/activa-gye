@@ -107,13 +107,13 @@ export default function MiPanelPage() {
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
           {tab === 'ficha' ? <FichaTab /> : null}
           {tab === 'calendario' ? (
-            <PhaseGate phase={2} title="Calendario y progreso"><CalendarioTab /></PhaseGate>
+            <PhaseGate phase={2} title="Calendario y progreso" back={{ to: '/mi-panel?tab=ficha', label: 'Ir a mi ficha' }}><CalendarioTab /></PhaseGate>
           ) : null}
           {tab === 'pagos' ? (
-            <PhaseGate phase={2} title="Pagos"><PagosTab /></PhaseGate>
+            <PhaseGate phase={2} title="Pagos" back={{ to: '/mi-panel?tab=ficha', label: 'Ir a mi ficha' }}><PagosTab /></PhaseGate>
           ) : null}
           {tab === 'nutricionista' ? (
-            <PhaseGate phase={2} title="Mi nutricionista"><MiNutricionistaTab /></PhaseGate>
+            <PhaseGate phase={2} title="Mi nutricionista" back={{ to: '/mi-panel?tab=ficha', label: 'Ir a mi ficha' }}><MiNutricionistaTab /></PhaseGate>
           ) : null}
         </div>
       </section>

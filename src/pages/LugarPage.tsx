@@ -8,6 +8,7 @@ import BackButton from '../components/ui/BackButton';
 import { Button, buttonClasses } from '../components/ui/Button';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../components/ui/States';
 import { useAuth } from '../auth/AuthContext';
+import { usePhase } from '../auth/SettingsContext';
 import { repo, type Place, type Sector, type Sport } from '../data';
 import { DAY_LABELS, formatPrice, placeImage, summarizeHours } from '../lib/format';
 import { googleDirectionsUrl, osmUrl } from '../lib/directions';
@@ -42,6 +43,7 @@ export default function LugarPage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { session } = useAuth();
+  const fase3 = usePhase(3);
 
   const [place, setPlace] = useState<Place | null | undefined>(undefined);
   const [sports, setSports] = useState<Sport[]>([]);
@@ -295,9 +297,11 @@ export default function LugarPage() {
         </aside>
       </div>
 
-      <div className="mt-10">
-        <ReviewsSection target="lugar" targetId={place.id} canReview title="Reseñas" />
-      </div>
+      {fase3 ? (
+        <div className="mt-10">
+          <ReviewsSection target="lugar" targetId={place.id} canReview title="Reseñas" />
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -125,6 +125,21 @@ describe('HoyPage sin semana', () => {
     );
   });
 
+  it('REQUIERE_NUTRICIONISTA con fase 2 apagada: solo explica, sin enlace a la nutricionista', async () => {
+    const user = userEvent.setup();
+    vi.mocked(usePhase).mockReturnValue(false);
+    mock.getMyTrial.mockResolvedValue(null);
+    mock.getMyIntake.mockResolvedValue({} as never);
+    mock.startMyTrial.mockRejectedValue(Object.assign(new Error('x'), { name: 'AppError', code: 'REQUIERE_NUTRICIONISTA' }));
+    renderPagina();
+    await user.click(await screen.findByRole('button', { name: 'Generar mi semana gratis' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Por tu condición de salud, tu plan lo armará una nutricionista. Te avisaremos cuando esté disponible.',
+    );
+    expect(screen.queryByRole('link', { name: 'Pedir atención a una nutricionista' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a mi perfil' })).toHaveAttribute('href', '/perfil');
+  });
+
   it('muestra cargando mientras revisa la semana', () => {
     mock.getMyTrial.mockReturnValue(new Promise(() => undefined));
     mock.getMyIntake.mockReturnValue(new Promise(() => undefined));

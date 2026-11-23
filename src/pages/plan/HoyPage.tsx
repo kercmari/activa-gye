@@ -93,6 +93,7 @@ interface SinSemanaProps {
 
 /** Sin semana: ficha pendiente, o botón para generarla, o aviso de nutricionista. */
 function SinSemana({ onCreated }: SinSemanaProps) {
+  const phase2 = usePhase(2);
   const [ficha, setFicha] = useState<{ estado: 'cargando' } | { estado: 'error'; mensaje: string } | { estado: 'lista'; tiene: boolean }>({
     estado: 'cargando',
   });
@@ -150,7 +151,14 @@ function SinSemana({ onCreated }: SinSemanaProps) {
       <p className="mt-3 max-w-xl text-slate-600">
         Tu ficha ya está lista. Cada día se abre cuando haces tu chequeo y marcas la mitad de tus ítems.
       </p>
-      {error?.codigo === 'REQUIERE_NUTRICIONISTA' ? (
+      {error?.codigo === 'REQUIERE_NUTRICIONISTA' && !phase2 ? (
+        <div role="alert" className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+          <p className="font-bold text-amber-900">Por tu condición de salud, tu plan lo armará una nutricionista. Te avisaremos cuando esté disponible.</p>
+          <div className="mt-4">
+            <LinkButton to="/perfil" variant="blue">Volver a mi perfil</LinkButton>
+          </div>
+        </div>
+      ) : error?.codigo === 'REQUIERE_NUTRICIONISTA' ? (
         <div role="alert" className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
           <p className="font-bold text-amber-900">{error.mensaje}</p>
           <div className="mt-4">

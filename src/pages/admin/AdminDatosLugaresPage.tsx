@@ -161,7 +161,7 @@ function Contenido() {
 export default function AdminDatosLugaresPage() {
   return (
     <AdminShell title="Datos de lugares">
-      <PhaseGate phase={3} title="Datos de lugares">
+      <PhaseGate phase={3} title="Datos de lugares" back={{ to: '/admin', label: 'Volver al resumen' }}>
         <Contenido />
       </PhaseGate>
     </AdminShell>

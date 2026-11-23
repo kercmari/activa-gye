@@ -493,7 +493,7 @@ export default function AdminPagosPage() {
 
   return (
     <AdminShell title="Pagos">
-      <PhaseGate phase={2} title="Pagos">
+      <PhaseGate phase={2} title="Pagos" back={{ to: '/admin', label: 'Volver al resumen' }}>
         <div role="tablist" aria-label="Secciones de pagos" className="mb-6 flex gap-2 overflow-x-auto pb-1">
           {TABS.map((item) => (
             <button
