@@ -67,7 +67,7 @@ export function TrialItemRow({ item, disabled, onToggle }: TrialItemRowProps) {
                 aria-expanded={open}
                 aria-controls={detailId}
                 onClick={() => setOpen((v) => !v)}
-                className="mt-1 inline-flex items-center gap-1 rounded-lg px-1 text-xs font-bold text-brand-blue hover:underline"
+                className="mt-1 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-xs font-bold text-brand-blue hover:underline"
               >
                 {open ? 'Ocultar detalle' : 'Ver detalle'}
                 <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />

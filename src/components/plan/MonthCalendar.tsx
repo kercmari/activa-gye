@@ -51,10 +51,10 @@ export default function MonthCalendar({ year, month, selected, today, dotDates, 
       <div className="flex items-center justify-between gap-2">
         <h3 className="display text-xl text-navy-900">{title}</h3>
         <div className="flex gap-2">
-          <button type="button" onClick={onPrev} aria-label="Mes anterior" className="flex h-9 w-9 items-center justify-center rounded-full text-navy-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-orange">
+          <button type="button" onClick={onPrev} aria-label="Mes anterior" className="flex h-11 w-11 items-center justify-center rounded-full text-navy-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-orange">
             <ChevronLeft className="h-5 w-5" aria-hidden="true" />
           </button>
-          <button type="button" onClick={onNext} aria-label="Mes siguiente" className="flex h-9 w-9 items-center justify-center rounded-full text-navy-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-orange">
+          <button type="button" onClick={onNext} aria-label="Mes siguiente" className="flex h-11 w-11 items-center justify-center rounded-full text-navy-900 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-brand-orange">
             <ChevronRight className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
@@ -84,7 +84,7 @@ export default function MonthCalendar({ year, month, selected, today, dotDates, 
               aria-pressed={isSelected}
               aria-current={isToday ? 'date' : undefined}
               onClick={() => onSelect(c.date)}
-              className={`relative mx-auto flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold transition ${tone} ${isToday && !isSelected ? 'ring-2 ring-brand-orange/60' : ''}`}
+              className={`relative mx-auto flex h-11 w-full max-w-11 items-center justify-center rounded-full text-sm font-semibold transition ${tone} ${isToday && !isSelected ? 'ring-2 ring-brand-orange/60' : ''}`}
             >
               <span>{dayNumber}</span>
               {locked ? (

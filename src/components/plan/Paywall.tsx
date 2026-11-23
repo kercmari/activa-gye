@@ -1,4 +1,4 @@
-/** Muro de los días 8+ sin suscripción activa. Con la fase 2 apagada solo dice «Próximamente». */
+/** Muro de los días 8+ sin suscripción activa. Con la fase 2 apagada dice que la agenda pagada aún no está disponible. */
 import { Lock } from 'lucide-react';
 import { LinkButton } from '../ui/Button';
 
@@ -7,7 +7,7 @@ export default function Paywall({ phase2On }: { phase2On: boolean }) {
     return (
       <div className="flex items-start gap-3 rounded-2xl bg-slate-100 p-5 text-slate-700" data-testid="paywall-proximamente">
         <Lock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
-        <p><strong className="text-navy-900">Próximamente.</strong> La agenda pagada se habilitará en la siguiente etapa de Activa GYE.</p>
+        <p><strong className="text-navy-900">La agenda pagada aún no está disponible.</strong> Se habilitará en la siguiente etapa de Activa GYE.</p>
       </div>
     );
   }

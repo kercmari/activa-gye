@@ -53,6 +53,12 @@ describe('Header', () => {
     expect(screen.queryByText('Notificaciones')).not.toBeInTheDocument();
     expect(screen.queryByTestId('campana')).not.toBeInTheDocument();
     expect(screen.queryByText('Panel nutricionista')).not.toBeInTheDocument();
+    expect(screen.queryByText('Mi plan')).not.toBeInTheDocument();
+  });
+
+  it('el usuario paciente ve Mi plan en el menú de cuenta', () => {
+    vi.mocked(useAuth).mockReturnValue({ session: sessionFor('usuario') as never, loading: false, refresh: async () => {} });
+    renderHeader();
     expect(screen.getByText('Mi plan')).toBeInTheDocument();
   });
 

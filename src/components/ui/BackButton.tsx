@@ -19,7 +19,7 @@ export default function BackButton({ fallback = '/', className = '' }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-xl px-2 py-1 text-sm font-bold text-navy-900 transition-colors hover:bg-slate-100 ${className}`}
+      className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-2 py-1 text-sm font-bold text-navy-900 transition-colors hover:bg-slate-100 ${className}`}
     >
       <ArrowLeft className="h-4 w-4" aria-hidden="true" />
       Volver

@@ -27,7 +27,9 @@ function AccountLinks({ session, phase2, onSignOut, onNavigate }: { session: Ses
   return (
     <>
       <Link to="/perfil" className={itemClass} onClick={onNavigate}>Mi perfil</Link>
-      <Link to="/mi-plan" className={itemClass} onClick={onNavigate}>Mi plan</Link>
+      {session.profile.role === 'usuario' ? (
+        <Link to="/mi-plan" className={itemClass} onClick={onNavigate}>Mi plan</Link>
+      ) : null}
       {phase2 ? (
         <>
           <Link to="/mi-panel" className={itemClass} onClick={onNavigate}>Mi panel</Link>
@@ -159,7 +161,7 @@ export function Header() {
 
           <button
             type="button"
-            className="rounded-xl p-2 hover:bg-white/10 lg:hidden"
+            className="grid h-11 w-11 place-items-center rounded-xl hover:bg-white/10 lg:hidden"
             aria-label="Abrir menú"
             aria-expanded={menuOpen}
             aria-controls="menu-movil"

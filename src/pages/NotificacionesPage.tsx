@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Navigate, useNavigate } from 'react-router';
+import { usePhase } from '../auth/SettingsContext';
 import PhaseGate from '../components/PhaseGate';
 import { useAsync } from '../components/profile/useAsync';
 import PageHeader from '../components/ui/PageHeader';
@@ -19,6 +20,9 @@ function tiempoRelativo(iso: string, ahora: number = Date.now()): string {
 }
 
 export default function NotificacionesPage() {
+  // Con la fase 2 apagada la página no se muestra: se lleva a «Mi perfil» en vez de mostrar «Próximamente».
+  const phase2 = usePhase(2);
+  if (!phase2) return <Navigate to="/perfil" replace />;
   return (
     <>
       <PageHeader

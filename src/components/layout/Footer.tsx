@@ -1,10 +1,13 @@
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
 
-const linkClass = 'text-sm text-slate-300 transition-colors hover:text-white';
+const linkClass = 'inline-flex min-h-11 items-center text-sm text-slate-300 transition-colors hover:text-white';
 
 export function Footer() {
   const { session } = useAuth();
+  const { pathname } = useLocation();
+  // En «Mi plan» la barra inferior fija tapa el pie: se deja espacio bajo la línea de derechos.
+  const conBarraInferior = pathname.startsWith('/mi-plan');
   return (
     <footer className="bg-navy-950 text-white">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
@@ -23,7 +26,6 @@ export function Footer() {
           <ul className="mt-4 flex flex-col gap-2.5">
             <li><Link to="/deportes" className={linkClass}>Deportes</Link></li>
             <li><Link to="/lugares" className={linkClass}>Buscar lugares</Link></li>
-            <li><Link to="/" className={linkClass}>Nutrición</Link></li>
           </ul>
         </div>
 
@@ -49,7 +51,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-slate-400">
+        <p className={`mx-auto max-w-6xl px-4 py-5 text-xs text-slate-400 ${conBarraInferior ? 'pb-24 md:pb-5' : ''}`}>
           © 2026 Activa GYE · Guayaquil, Ecuador · Proyecto académico
         </p>
       </div>

@@ -35,6 +35,7 @@ function renderPage() {
       <Routes>
         <Route path="/notificaciones" element={<NotificacionesPage />} />
         <Route path="/mi-panel" element={<p>Panel de prueba</p>} />
+        <Route path="/perfil" element={<p>Mi perfil de prueba</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -87,11 +88,12 @@ describe('NotificacionesPage', () => {
     expect(await screen.findByRole('button', { name: /Solicitud aceptada/ })).toBeInTheDocument();
   });
 
-  it('con fase 2 apagada muestra Próximamente y no consulta', () => {
+  it('con fase 2 apagada lleva a Mi perfil y no consulta', () => {
     vi.mocked(usePhase).mockReturnValue(false);
     renderPage();
 
-    expect(screen.getByText('Próximamente')).toBeInTheDocument();
+    expect(screen.getByText('Mi perfil de prueba')).toBeInTheDocument();
+    expect(screen.queryByText('Próximamente')).not.toBeInTheDocument();
     expect(repo.listNotifications).not.toHaveBeenCalled();
   });
 });

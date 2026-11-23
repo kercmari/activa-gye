@@ -220,7 +220,7 @@ export default function LugaresPage() {
                 type="button"
                 aria-pressed={view === 'lista'}
                 onClick={() => setView('lista')}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${view === 'lista' ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-slate-100'}`}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${view === 'lista' ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-slate-100'}`}
               >
                 <List className="h-4 w-4" aria-hidden="true" />
                 Lista
@@ -229,7 +229,7 @@ export default function LugaresPage() {
                 type="button"
                 aria-pressed={view === 'mapa'}
                 onClick={() => setView('mapa')}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${view === 'mapa' ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-slate-100'}`}
+                className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold ${view === 'mapa' ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-slate-100'}`}
               >
                 <MapIcon className="h-4 w-4" aria-hidden="true" />
                 Mapa
