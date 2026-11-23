@@ -46,7 +46,8 @@ export async function ingresar(page: Page, correo: string, clave: string) {
 /**
  * Cada prueba que registra pacientes gasta cupo en la base local. Si ya no queda cupo,
  * el admin lo sube 50 lugares para la prueba (la prueba de cupo de fase1 lo restaura).
- * Debe llamarse dentro de conCandadoDeFases.
+ * Solo lo llama registrarCon, que ya corre dentro de conCandadoDeFases: así ninguna otra
+ * prueba cambia el cupo mientras la prueba de cupo lo tiene fijado.
  */
 export async function asegurarCupo(page: Page) {
   await page.goto('/registro');
@@ -62,10 +63,19 @@ export async function asegurarCupo(page: Page) {
  * Registra una cuenta nueva con foto (obligatoria) y deja la sesión en la pantalla que corresponde:
  * paciente → /mi-panel; nutricionista (pendiente de revisión) → /perfil con el aviso de solicitud.
  */
-export async function registrarCon(
+export function registrarCon(
   page: Page,
   nombre: string,
   tipo: 'paciente' | 'nutricionista' = 'paciente',
+): Promise<{ correo: string; clave: string }> {
+  // Todo el registro corre con el candado: el cupo que otra prueba fija no cambia a mitad de camino.
+  return conCandadoDeFases(() => registrarSinCandado(page, nombre, tipo));
+}
+
+async function registrarSinCandado(
+  page: Page,
+  nombre: string,
+  tipo: 'paciente' | 'nutricionista',
 ): Promise<{ correo: string; clave: string }> {
   const correo = correoUnico();
   const clave = 'ClaveSegura2026';
@@ -150,7 +160,11 @@ export async function fijarFases(
  */
 const CANDADO = join(tmpdir(), 'activagye-e2e-fases.lock');
 
+/** true mientras este proceso (un worker) tiene el candado: permite anidar sin bloquearse a sí mismo. */
+let candadoPropio = false;
+
 export async function conCandadoDeFases<T>(fn: () => Promise<T>): Promise<T> {
+  if (candadoPropio) return fn();
   const inicio = Date.now();
   for (;;) {
     try {
@@ -162,9 +176,11 @@ export async function conCandadoDeFases<T>(fn: () => Promise<T>): Promise<T> {
       await new Promise((r) => setTimeout(r, 500));
     }
   }
+  candadoPropio = true;
   try {
     return await fn();
   } finally {
+    candadoPropio = false;
     rmSync(CANDADO, { recursive: true, force: true });
   }
 }
