@@ -12,6 +12,8 @@ interface Tarjeta {
 
 const TARJETAS: Tarjeta[] = [
   { to: '/admin/lugares', titulo: 'Lugares', texto: 'Crea, edita y revisa los lugares deportivos de Guayaquil.' },
+  { to: '/admin/plantillas', titulo: 'Plantillas', texto: 'Crea y revisa las plantillas de comidas y rutinas que reciben los pacientes.' },
+  { to: '/admin/guia', titulo: 'Guía', texto: 'Escribe y actualiza las entradas de la guía pública.' },
   { to: '/admin/datos-lugares', titulo: 'Datos de lugares', texto: 'Completa horarios, precios y datos de cada lugar.', phase: 3 },
   { to: '/admin/pagos', titulo: 'Pagos', texto: 'Revisa los cobros y las facturas de la plataforma.', phase: 2 },
   { to: '/admin/usuarios', titulo: 'Usuarios', texto: 'Consulta las cuentas registradas y sus roles.' },

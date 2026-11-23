@@ -53,6 +53,14 @@ describe('AdminHomePage', () => {
     }
   });
 
+  it('el resumen tiene tarjeta para Plantillas y Guía aunque las fases 2 y 3 estén apagadas', () => {
+    renderPage();
+
+    const resumen = screen.getByRole('list', { name: 'Secciones de administración' });
+    expect(within(resumen).getByRole('link', { name: 'Plantillas' })).toHaveAttribute('href', '/admin/plantillas');
+    expect(within(resumen).getByRole('link', { name: 'Guía' })).toHaveAttribute('href', '/admin/guia');
+  });
+
   it('con fase 2 y 3 encendidas muestra todas las secciones', () => {
     h.settings = { phase1: true, phase2: true, phase3: true, patient_limit: 5, patients_count: 2 };
     renderPage();
