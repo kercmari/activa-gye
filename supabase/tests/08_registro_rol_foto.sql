@@ -1,6 +1,6 @@
 -- Pruebas de registro con tipo de cuenta, solicitud de nutricionista, admin_list_users y foto de perfil (22/11/2026).
 begin;
-select plan(28);
+select plan(35);
 
 -- ============ Datos (como superusuario) ============
 update public.app_settings set phase1 = true, phase2 = true, phase3 = false, patient_limit = 1000 where id = 1;
@@ -154,6 +154,46 @@ select is((select count(*)::int from storage.objects
   where bucket_id = 'avatars' and name = '00000000-0000-0000-0000-0000000008e2/avatar.jpg'),
   1, 'staff (admin) ve la foto de la solicitud');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
+
+-- ============ Arreglos de RE5 (migración 11): el cupo no se salta con «Soy nutricionista» ============
+-- 29-30. Cupo lleno, con un nutricionista rechazado: cuenta como paciente en el conteo y en el cupo.
+update public.app_settings set patient_limit = (
+  select count(*) from public.profiles
+   where role = 'usuario' and (requested_role is null or nutri_status = 'rechazado')) where id = 1;
+select is((public.get_public_settings() ->> 'patients_count')::int,
+  (select count(*)::int from public.profiles
+    where role = 'usuario' and (requested_role is null or nutri_status = 'rechazado')),
+  'cupo lleno: patients_count cuenta al nutricionista rechazado');
+select throws_ok($$
+  insert into auth.users (id, aud, role, email, raw_user_meta_data) values
+    ('00000000-0000-0000-0000-0000000008f8', 'authenticated', 'authenticated', 'pac8y@test.local',
+     '{"full_name":"Paciente Lleno","birth_date":"1990-05-10","account_type":"paciente"}')
+$$, 'P0001', 'CUPO_LLENO', 'cupo lleno con rechazado: un paciente nuevo falla con CUPO_LLENO');
+
+-- 31. Una solicitud pendiente entra aunque el cupo esté lleno (no es paciente).
+select lives_ok($$
+  insert into auth.users (id, aud, role, email, raw_user_meta_data) values
+    ('00000000-0000-0000-0000-0000000008e3', 'authenticated', 'authenticated', 'nut8d@test.local',
+     '{"full_name":"Nutri Ocho D","birth_date":"1983-03-03","account_type":"nutricionista"}')
+$$, 'cupo lleno: un nutricionista pendiente sí entra');
+
+-- 32-35. La cuenta pendiente no guarda ficha, no pide atención y no recibe la semana gratis.
+do $$ begin
+  perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000008e3","role":"authenticated"}', true);
+  set local role authenticated;
+end $$;
+select throws_ok($$ insert into public.patient_intakes (user_id, weight_kg, height_cm, goal, activity_level)
+  values ('00000000-0000-0000-0000-0000000008e3', 70, 170, 'mantener', 'moderado') $$,
+  'P0001', 'SOLICITUD_EN_REVISION', 'pendiente: no guarda la ficha');
+select throws_ok($$ select public.request_care('Hola') $$,
+  'P0001', 'SOLICITUD_EN_REVISION', 'pendiente: no puede pedir atención');
+select throws_ok($$ select public.assign_trial() $$,
+  'P0001', 'SOLICITUD_EN_REVISION', 'pendiente: no recibe la semana gratis');
+do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
+select is((select count(*)::int from public.trials where user_id = '00000000-0000-0000-0000-0000000008e3'),
+  0, 'pendiente: no quedó ninguna semana asignada');
+
+update public.app_settings set patient_limit = 1000 where id = 1;
 
 select * from finish();
 rollback;
