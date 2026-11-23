@@ -34,9 +34,8 @@ async function rutaActual(page: Page): Promise<string> {
 test('cada enlace del menú lleva a su página', async ({ page }) => {
   test.setTimeout(120_000);
   const destinos: [string, string][] = [
+    ['Deportes', '/deportes'],
     ['Conócenos', '/conocenos'],
-    ['Explorar deportes', '/deportes'],
-    ['Buscar lugares', '/lugares'],
     ['Contacto', '/contacto'],
     ['Inicio', '/'],
   ];
@@ -48,7 +47,20 @@ test('cada enlace del menú lleva a su página', async ({ page }) => {
   }
 });
 
-test('botones de la portada: Explorar actividades, Explorar lugares y Conoce más', async ({ page }) => {
+test('portada Nutrición: Soy paciente y Soy nutricionista abren el registro con su tipo', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Soy paciente', exact: true }).first().click();
+  await expect.poll(() => rutaActual(page)).toBe('/registro');
+  await expect(page.getByRole('radio', { name: /Soy paciente/ })).toBeChecked();
+  await revisarTextos(page);
+
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Soy nutricionista', exact: true }).first().click();
+  await expect.poll(() => rutaActual(page)).toBe('/registro');
+  await expect(page.getByRole('radio', { name: /Soy nutricionista/ })).toBeChecked();
+});
+
+test('botones del Panel de deportes: Explorar lugares y Conoce más; Explorar actividades lleva al panel', async ({ page }) => {
   await page.goto('/');
   if (esMovil(page)) {
     await abrirMenuSiMovil(page);
@@ -59,11 +71,11 @@ test('botones de la portada: Explorar actividades, Explorar lugares y Conoce má
   await expect.poll(() => rutaActual(page)).toBe('/deportes');
   await revisarTextos(page);
 
-  await page.goto('/');
+  await page.goto('/deportes');
   await page.getByRole('link', { name: /Explorar lugares/ }).first().click();
   await expect.poll(() => rutaActual(page)).toBe('/lugares');
 
-  await page.goto('/');
+  await page.goto('/deportes');
   await page.getByRole('link', { name: /Conoce más/ }).first().click();
   await expect.poll(() => rutaActual(page)).toBe('/conocenos');
 });
@@ -76,7 +88,7 @@ test('tarjeta de deporte lleva a sus lugares', async ({ page }) => {
 });
 
 test('buscador con filtro lleva a /lugares con los filtros y Volver los conserva', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/deportes');
   const actividad = page.getByLabel('Actividad', { exact: true }).first();
   await actividad.selectOption({ index: 1 });
   const deporte = await actividad.inputValue();
@@ -102,7 +114,7 @@ test('buscador con filtro lleva a /lugares con los filtros y Volver los conserva
 test('Volver regresa a la página anterior desde deportes y contacto', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto('/');
-  await irPorMenu(page, 'Explorar deportes');
+  await irPorMenu(page, 'Deportes');
   await expect.poll(() => rutaActual(page)).toBe('/deportes');
   await page.locator('a[href^="/deportes/"]').first().click();
   await expect.poll(() => rutaActual(page)).toMatch(/^\/deportes\/[a-z0-9-]+$/);

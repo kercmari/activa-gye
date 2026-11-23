@@ -53,8 +53,9 @@ test('admin pone cupo = pacientes actuales → registro dice «no hay cupos» �
     // Cuántos cupos quedan (la página de registro los muestra con la fase 3 apagada).
     await page.goto('/registro');
     await expect(page.getByText(/Cupos disponibles:|Por ahora no hay cupos/)).toBeVisible();
-    const cuposTexto = await page.getByText(/Cupos disponibles:/).textContent();
-    const libres = cuposTexto ? Number(cuposTexto.replace(/\D/g, '')) : 0;
+    // Con cupo lleno la página dice «Por ahora no hay cupos» y no muestra el contador: son 0 libres.
+    const contador = page.getByText(/Cupos disponibles:/);
+    const libres = (await contador.count()) ? Number((await contador.first().textContent() ?? '').replace(/\D/g, '')) : 0;
 
     // Límite original, para restaurarlo pase lo que pase.
     await ingresar(page, ADMIN.correo, ADMIN.clave);

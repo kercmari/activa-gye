@@ -58,20 +58,35 @@ export async function asegurarCupo(page: Page) {
   await page.goto('/registro');
 }
 
-/** Registra un paciente nuevo y deja la sesión en /mi-panel. */
-export async function registrar(page: Page, nombre: string): Promise<{ correo: string; clave: string }> {
+/**
+ * Registra una cuenta nueva con foto (obligatoria) y deja la sesión en la pantalla que corresponde:
+ * paciente → /mi-panel; nutricionista (pendiente de revisión) → /perfil con el aviso de solicitud.
+ */
+export async function registrarCon(
+  page: Page,
+  nombre: string,
+  tipo: 'paciente' | 'nutricionista' = 'paciente',
+): Promise<{ correo: string; clave: string }> {
   const correo = correoUnico();
   const clave = 'ClaveSegura2026';
-  await asegurarCupo(page);
+  if (tipo === 'paciente') await asegurarCupo(page);
+  else await page.goto('/registro?tipo=nutricionista');
+  await page.getByRole('radio', { name: tipo === 'paciente' ? /Soy paciente/ : /Soy nutricionista/ }).check();
   await page.getByLabel('Nombre completo', { exact: true }).fill(nombre);
   await page.getByLabel('Correo electrónico', { exact: true }).fill(correo);
   await page.getByLabel('Contraseña', { exact: true }).fill(clave);
   await page.getByLabel('Confirmar contraseña', { exact: true }).fill(clave);
   await page.getByLabel('Fecha de nacimiento', { exact: true }).fill('2000-05-10');
+  await page.locator('input[type="file"]').setInputFiles(FOTO_CUERPO);
   await page.getByLabel('Acepto los términos y la política de privacidad').check();
   await page.getByRole('button', { name: 'Crear cuenta', exact: true }).click();
-  await expect.poll(() => ruta(page)).toBe('/mi-panel');
+  await expect.poll(() => ruta(page)).toBe(tipo === 'paciente' ? '/mi-panel' : '/perfil');
   return { correo, clave };
+}
+
+/** Registra un paciente nuevo con foto y deja la sesión en /mi-panel. */
+export async function registrar(page: Page, nombre: string): Promise<{ correo: string; clave: string }> {
+  return registrarCon(page, nombre, 'paciente');
 }
 
 /** Llena y guarda la ficha inicial (mayor de edad, sin foto salvo que se pase `foto`). */
