@@ -3,7 +3,6 @@ import { ClipboardList, Flame, UserCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { usePhase } from '../auth/SettingsContext';
 import PageHeader from '../components/ui/PageHeader';
-import Badge from '../components/ui/Badge';
 import { LinkButton } from '../components/ui/Button';
 
 /** Cómo funciona: pasos del servicio de nutrición y acceso a la ficha o al registro. */
@@ -11,10 +10,15 @@ export default function NutricionPage() {
   const { session } = useAuth();
   const phase2 = usePhase(2);
 
+  // Con la fase 2 apagada solo se muestra el paso de la ficha (sin pasos «Próximamente»).
   const steps = [
-    { icon: ClipboardList, title: 'Llena tu ficha', text: 'Registra tus datos y una foto de referencia.', soon: false },
-    { icon: UserCheck, title: 'Un nutricionista acepta tu solicitud', text: 'Un profesional revisa tu ficha y te acompaña desde ese momento.', soon: !phase2 },
-    { icon: Flame, title: 'Sigue tu calendario', text: 'Marca cada día cumplido y revisa tu avance con tu nutricionista.', soon: !phase2 },
+    { icon: ClipboardList, title: 'Llena tu ficha', text: 'Registra tus datos y una foto de referencia.' },
+    ...(phase2
+      ? [
+          { icon: UserCheck, title: 'Un nutricionista acepta tu solicitud', text: 'Un profesional revisa tu ficha y te acompaña desde ese momento.' },
+          { icon: Flame, title: 'Sigue tu calendario', text: 'Marca cada día cumplido y revisa tu avance con tu nutricionista.' },
+        ]
+      : []),
   ];
 
   return (
@@ -28,7 +32,7 @@ export default function NutricionPage() {
 
       <section className="mx-auto max-w-6xl px-4 py-12">
         <h2 className="display text-3xl text-navy-900">Cómo funciona</h2>
-        <ol className="mt-8 grid gap-6 md:grid-cols-3">
+        <ol className={`mt-8 grid gap-6 ${steps.length > 1 ? 'md:grid-cols-3' : ''}`}>
           {steps.map((step, index) => {
             const Icon = step.icon;
             return (
@@ -41,7 +45,6 @@ export default function NutricionPage() {
                 </div>
                 <h3 className="display mt-5 text-xl text-navy-900">{step.title}</h3>
                 <p className="mt-2 text-slate-600">{step.text}</p>
-                {step.soon ? <Badge tone="slate" className="mt-4">Próximamente</Badge> : null}
               </li>
             );
           })}

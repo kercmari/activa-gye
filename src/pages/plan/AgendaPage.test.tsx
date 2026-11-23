@@ -115,12 +115,14 @@ describe('AgendaPage', () => {
     expect(screen.getByRole('link', { name: 'Suscribirme' })).toHaveAttribute('href', '/mi-plan/suscripcion');
   });
 
-  it('con fase 2 apagada el muro dice «Próximamente»', async () => {
+  it('con fase 2 apagada el muro no anuncia ni ofrece la suscripción', async () => {
     mocks.phase2.on = false;
     renderAgenda();
     await screen.findByText('Avena con fruta');
     fireEvent.click(screen.getByRole('button', { name: '28 de noviembre de 2026' }));
-    expect(await screen.findByText('Próximamente.')).toBeInTheDocument();
+    expect(await screen.findByText('Tu semana gratis terminó en el día 7.')).toBeInTheDocument();
+    expect(screen.queryByText('Próximamente.')).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Suscribirme' })).not.toBeInTheDocument();
     expect(mocks.getMyPatientSubscription).not.toHaveBeenCalled();
   });
 

@@ -15,6 +15,7 @@ vi.mock('../../auth/AuthContext', () => ({
   }),
 }));
 vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: (n: number) => (n === 1 ? true : n === 2 ? h.settings.phase2 : h.settings.phase3),
   useSettings: () => ({ settings: h.settings, loading: false, reload: async () => {} }),
 }));
 

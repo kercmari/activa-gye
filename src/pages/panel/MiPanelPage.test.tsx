@@ -58,12 +58,15 @@ describe('MiPanelPage', () => {
     expect(repo.listMyInvoices).toHaveBeenCalled();
   });
 
-  it('con fase 2 apagada, Calendario muestra Próximamente', async () => {
+  it('con fase 2 apagada solo muestra la pestaña de la ficha', async () => {
     vi.mocked(usePhase).mockReturnValue(false);
     renderAt('/mi-panel?tab=calendario');
 
-    expect(await screen.findByTestId('fase-2-bloqueada')).toBeInTheDocument();
-    expect(screen.getByText('Próximamente')).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: 'Mi ficha' })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByRole('tab', { name: 'Calendario y progreso' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Pagos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Mi nutricionista' })).not.toBeInTheDocument();
+    expect(screen.queryByText('Próximamente')).not.toBeInTheDocument();
     expect(repo.listPlanDays).not.toHaveBeenCalled();
   });
 

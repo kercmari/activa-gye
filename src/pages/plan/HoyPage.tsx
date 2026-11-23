@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, Circle, Lock } from 'lucide-react';
 import { repo, type DailyCheckin, type Trial } from '../../data';
+import { usePhase } from '../../auth/SettingsContext';
 import { CheckinCard } from '../../components/plan/CheckinCard';
 import { TrialItemRow } from '../../components/plan/TrialItemRow';
 import { useTrial } from '../../components/plan/useTrial';
@@ -181,6 +182,7 @@ interface SemanaActivaProps {
 
 /** Semana con plan: día actual, ítems, progreso, chequeo y aviso de lo que falta. */
 function SemanaActiva({ trial, checkin, checkinError, onReintentarChequeo, onCheckinSaved, onToggle }: SemanaActivaProps) {
+  const phase2 = usePhase(2);
   const ultimoAbierto = [...trial.days].reverse().find((d) => d.unlocked)?.day_number ?? 1;
   const numeroDia = trial.current_day ?? ultimoAbierto;
   const dia = trial.days.find((d) => d.day_number === numeroDia) ?? trial.days[0];
@@ -208,11 +210,15 @@ function SemanaActiva({ trial, checkin, checkinError, onReintentarChequeo, onChe
         <section aria-labelledby="fin-titulo" className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
           <h2 id="fin-titulo" className="display text-2xl text-navy-900">¡Terminaste tus 7 días!</h2>
           <p className="mt-3 text-slate-600">
-            Para seguir con tu plan, suscríbete. Una nutricionista tomará tu caso y armará tu agenda.
+            {phase2
+              ? 'Para seguir con tu plan, suscríbete. Una nutricionista tomará tu caso y armará tu agenda.'
+              : 'Tu semana gratis llegó a su fin.'}
           </p>
-          <div className="mt-5">
-            <LinkButton to="/mi-plan/suscripcion" variant="primary">Suscribirme para seguir</LinkButton>
-          </div>
+          {phase2 ? (
+            <div className="mt-5">
+              <LinkButton to="/mi-plan/suscripcion" variant="primary">Suscribirme para seguir</LinkButton>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

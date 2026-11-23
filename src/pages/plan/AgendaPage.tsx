@@ -162,6 +162,8 @@ export default function AgendaPage() {
         if (planDays.status === 'error') return <ErrorState message={planDays.message} onRetry={planDays.reload} />;
         return <p className="text-slate-500">Tu nutricionista aún no ha cargado el plan de este día.</p>;
       }
+      // Con la fase 2 apagada no se muestra ni botón ni anuncio de la suscripción.
+      if (!phase2) return <p className="rounded-2xl bg-slate-100 p-5 text-slate-700">Tu semana gratis terminó en el día 7.</p>;
       return <Paywall phase2On={phase2} />;
     }
     return <DayActivities items={[]} busyId={null} onToggle={() => undefined} />;

@@ -3,7 +3,15 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import AdminShell from './AdminShell';
 
-const h = vi.hoisted(() => ({ role: 'nutricionista' as 'nutricionista' | 'admin' }));
+const h = vi.hoisted(() => ({
+  role: 'nutricionista' as 'nutricionista' | 'admin',
+  phase2: true,
+  phase3: true,
+}));
+
+vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: (n: number) => (n === 2 ? h.phase2 : n === 3 ? h.phase3 : true),
+}));
 
 vi.mock('../../auth/AuthContext', () => ({
   useAuth: () => ({
@@ -25,6 +33,8 @@ function renderShell() {
 
 beforeEach(() => {
   h.role = 'nutricionista';
+  h.phase2 = true;
+  h.phase3 = true;
 });
 
 describe('AdminShell', () => {
@@ -36,6 +46,18 @@ describe('AdminShell', () => {
     expect(screen.queryByRole('link', { name: 'Usuarios' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Fases' })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Panel nutricionista' })).toBeInTheDocument();
+  });
+
+  it('con fases 2 y 3 apagadas no muestra Pagos, Datos de lugares ni Panel nutricionista', () => {
+    h.role = 'admin';
+    h.phase2 = false;
+    h.phase3 = false;
+    renderShell();
+
+    expect(screen.queryByRole('link', { name: 'Pagos' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Datos de lugares' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Panel nutricionista' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Fases' })).toBeInTheDocument();
   });
 
   it('admin ve todas las secciones', () => {

@@ -1,16 +1,17 @@
 import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
+import { usePhase } from '../../auth/SettingsContext';
 
-const ITEMS = [
+const ITEMS: { to: string; label: string; end: boolean; adminOnly: boolean; phase?: 2 | 3 }[] = [
   { to: '/admin', label: 'Resumen', end: true, adminOnly: true },
-  { to: '/nutri', label: 'Panel nutricionista', end: false, adminOnly: false },
+  { to: '/nutri', label: 'Panel nutricionista', end: false, adminOnly: false, phase: 2 },
   { to: '/admin/plantillas', label: 'Plantillas', end: false, adminOnly: false },
   { to: '/admin/guia', label: 'Guía', end: false, adminOnly: false },
   { to: '/admin/fases', label: 'Fases', end: false, adminOnly: true },
   { to: '/admin/lugares', label: 'Lugares', end: false, adminOnly: true },
-  { to: '/admin/datos-lugares', label: 'Datos de lugares', end: false, adminOnly: true },
-  { to: '/admin/pagos', label: 'Pagos', end: false, adminOnly: true },
+  { to: '/admin/datos-lugares', label: 'Datos de lugares', end: false, adminOnly: true, phase: 3 },
+  { to: '/admin/pagos', label: 'Pagos', end: false, adminOnly: true, phase: 2 },
   { to: '/admin/mensajes', label: 'Mensajes', end: false, adminOnly: true },
   { to: '/admin/usuarios', label: 'Usuarios', end: false, adminOnly: true },
 ];
@@ -24,7 +25,11 @@ interface Props {
 export default function AdminShell({ title, children }: Props) {
   const { session } = useAuth();
   const isAdmin = session?.profile.role === 'admin';
-  const items = ITEMS.filter((item) => isAdmin || !item.adminOnly);
+  const phase2 = usePhase(2);
+  const phase3 = usePhase(3);
+  // Las vistas de una fase apagada no aparecen en el menú.
+  const items = ITEMS.filter((item) => (isAdmin || !item.adminOnly)
+    && (item.phase === 2 ? phase2 : item.phase === 3 ? phase3 : true));
 
   return (
     <section className="bg-surface">

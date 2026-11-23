@@ -1,6 +1,6 @@
 import { useRef, type KeyboardEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ArrowRight, Lock } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { usePhase } from '../../auth/SettingsContext';
 import PhaseGate from '../../components/PhaseGate';
@@ -32,8 +32,10 @@ export default function MiPanelPage() {
   if (!session) return null;
 
   const firstName = session.profile.full_name.trim().split(/\s+/)[0] || '';
+  // Con la fase 2 apagada solo existe la pestaña de la ficha: nada que anuncie lo que viene.
+  const visibleTabs = TABS.filter((t) => t.phase === null || phase2);
   const tabParam = params.get('tab');
-  const tab: TabId = isTab(tabParam) ? tabParam : 'ficha';
+  const tab: TabId = isTab(tabParam) && visibleTabs.some((t) => t.id === tabParam) ? tabParam : 'ficha';
 
   const selectTab = (id: TabId) => {
     const next = new URLSearchParams(params);
@@ -42,14 +44,15 @@ export default function MiPanelPage() {
   };
 
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const n = visibleTabs.length;
     let target: number | null = null;
-    if (e.key === 'ArrowRight') target = (index + 1) % TABS.length;
-    if (e.key === 'ArrowLeft') target = (index - 1 + TABS.length) % TABS.length;
+    if (e.key === 'ArrowRight') target = (index + 1) % n;
+    if (e.key === 'ArrowLeft') target = (index - 1 + n) % n;
     if (e.key === 'Home') target = 0;
-    if (e.key === 'End') target = TABS.length - 1;
+    if (e.key === 'End') target = n - 1;
     if (target === null) return;
     e.preventDefault();
-    selectTab(TABS[target].id);
+    selectTab(visibleTabs[target].id);
     tabRefs.current[target]?.focus();
   };
 
@@ -76,9 +79,8 @@ export default function MiPanelPage() {
         </Link>
 
         <div role="tablist" aria-label="Secciones de mi panel" className="mb-8 flex gap-2 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm">
-          {TABS.map((t, i) => {
+          {visibleTabs.map((t, i) => {
             const active = t.id === tab;
-            const locked = t.phase === 2 && !phase2;
             return (
               <button
                 key={t.id}
@@ -96,7 +98,6 @@ export default function MiPanelPage() {
                   active ? 'bg-navy-900 text-white' : 'text-navy-900 hover:bg-slate-100',
                 ].join(' ')}
               >
-                {locked ? <Lock className="h-3.5 w-3.5" aria-hidden="true" /> : null}
                 {t.label}
               </button>
             );

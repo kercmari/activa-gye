@@ -1,9 +1,14 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { repo, type DailyCheckin, type Trial, type TrialDay } from '../../data';
+import { usePhase } from '../../auth/SettingsContext';
 import HoyPage from './HoyPage';
+
+vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: vi.fn(() => true),
+}));
 
 vi.mock('../../data', () => ({
   repo: {
@@ -221,4 +226,20 @@ describe('HoyPage con semana', () => {
     expect(await screen.findByRole('heading', { name: '¡Semana completada!' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Suscribirme para seguir' })).toHaveAttribute('href', '/mi-plan/suscripcion');
   });
+
+  it('semana completada con fase 2 apagada: sin botón de suscribirse', async () => {
+    vi.mocked(usePhase).mockReturnValue(false);
+    const completos = Array.from({ length: 7 }, (_, i) =>
+      dia(i + 1, { unlocked: true, unlocked_on: '2026-11-21', completed_at: '2026-11-27T20:00:00Z' }),
+    );
+    mock.getMyTrial.mockResolvedValue(semana({ current_day: null, finished: true }, completos));
+    renderPagina();
+    expect(await screen.findByRole('heading', { name: '¡Semana completada!' })).toBeInTheDocument();
+    expect(screen.getByText('Tu semana gratis llegó a su fin.')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Suscribirme para seguir' })).not.toBeInTheDocument();
+  });
+});
+
+afterEach(() => {
+  vi.mocked(usePhase).mockReturnValue(true);
 });

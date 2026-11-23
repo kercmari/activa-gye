@@ -40,6 +40,19 @@ describe('BottomNav', () => {
 });
 
 describe('PlanShell', () => {
+  it('no tiene pestaña Suscripción (la suscripción vive en Agenda y Hoy, con fase 2)', () => {
+    render(
+      <MemoryRouter initialEntries={['/mi-plan/hoy']}>
+        <Routes>
+          <Route path="/mi-plan" element={<PlanShell />}>
+            <Route path="hoy" element={<p>Hoy</p>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('link', { name: 'Suscripción' })).not.toBeInTheDocument();
+  });
+
   it('renderiza la barra y la pantalla hija, con Hoy marcada', async () => {
     render(
       <MemoryRouter initialEntries={['/mi-plan/hoy']}>

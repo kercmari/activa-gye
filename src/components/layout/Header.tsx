@@ -2,6 +2,7 @@ import { ChevronDown, LogOut, Menu, User, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
+import { usePhase } from '../../auth/SettingsContext';
 import { repo, type Session } from '../../data';
 import { LinkButton } from '../ui/Button';
 import NotificationBell from '../NotificationBell';
@@ -26,15 +27,19 @@ function initial(session: Session): string {
 }
 
 /** Enlaces de la cuenta con sesión (se usan en el menú de escritorio y en el móvil). */
-function AccountLinks({ session, onSignOut, onNavigate }: { session: Session; onSignOut: () => void; onNavigate?: () => void }) {
+function AccountLinks({ session, phase2, onSignOut, onNavigate }: { session: Session; phase2: boolean; onSignOut: () => void; onNavigate?: () => void }) {
   const itemClass = 'block rounded-xl px-3 py-2.5 text-sm font-semibold text-navy-900 hover:bg-slate-100';
   return (
     <>
       <Link to="/perfil" className={itemClass} onClick={onNavigate}>Mi perfil</Link>
       <Link to="/mi-plan" className={itemClass} onClick={onNavigate}>Mi plan</Link>
-      <Link to="/mi-panel" className={itemClass} onClick={onNavigate}>Mi panel</Link>
-      <Link to="/notificaciones" className={itemClass} onClick={onNavigate}>Notificaciones</Link>
-      {canSeePanel(session) ? (
+      {phase2 ? (
+        <>
+          <Link to="/mi-panel" className={itemClass} onClick={onNavigate}>Mi panel</Link>
+          <Link to="/notificaciones" className={itemClass} onClick={onNavigate}>Notificaciones</Link>
+        </>
+      ) : null}
+      {phase2 && canSeePanel(session) ? (
         <Link to="/nutri" className={itemClass} onClick={onNavigate}>Panel nutricionista</Link>
       ) : null}
       {session.profile.role === 'admin' ? (
@@ -50,6 +55,7 @@ function AccountLinks({ session, onSignOut, onNavigate }: { session: Session; on
 
 export function Header() {
   const { session, refresh } = useAuth();
+  const phase2 = usePhase(2);
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -103,14 +109,14 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-navy-900 text-white shadow-lg shadow-navy-900/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4">
-        <Link to="/" className="flex min-w-0 items-center gap-2 sm:gap-3" aria-label="Activa GYE, ir al inicio">
-          <img src="/img/logo.png" alt="" className="h-11 w-auto" />
-          <span className="truncate text-lg font-extrabold italic tracking-tight sm:text-xl">
+        <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-3" aria-label="Activa GYE, ir al inicio">
+          <img src="/img/logo.png" alt="" className="h-11 w-auto shrink-0" />
+          <span className="whitespace-nowrap text-lg font-extrabold italic tracking-tight sm:text-xl">
             ACTIVA <span className="text-brand-orange">GYE</span>
           </span>
         </Link>
 
-        <nav aria-label="Principal" className="hidden items-center gap-5 text-sm lg:flex">
+        <nav aria-label="Principal" className="hidden min-w-0 items-center gap-3 whitespace-nowrap text-sm lg:flex xl:gap-5">
           {NAV_ITEMS.map((item) => (
             <NavLink key={item.to} to={item.to} end={'end' in item ? item.end : false} className={navLinkClass}>
               {item.label}
@@ -123,7 +129,7 @@ export function Header() {
             Explorar actividades <span aria-hidden="true">→</span>
           </LinkButton>
 
-          {session ? <NotificationBell /> : null}
+          {session && phase2 ? <NotificationBell /> : null}
 
           {session ? (
             <div ref={accountRef} className="relative">
@@ -145,7 +151,7 @@ export function Header() {
                 hidden={!accountOpen}
                 className="absolute right-0 mt-2 w-60 rounded-2xl bg-white p-2 text-navy-900 shadow-xl"
               >
-                <AccountLinks session={session} onSignOut={signOut} />
+                <AccountLinks session={session} phase2={phase2} onSignOut={signOut} />
               </div>
             </div>
           ) : (
@@ -190,7 +196,7 @@ export function Header() {
           <div className="mt-4 border-t border-white/10 pt-4">
             {session ? (
               <div className="rounded-2xl bg-white p-2 text-navy-900">
-                <AccountLinks session={session} onSignOut={signOut} onNavigate={() => setMenuOpen(false)} />
+                <AccountLinks session={session} phase2={phase2} onSignOut={signOut} onNavigate={() => setMenuOpen(false)} />
               </div>
             ) : (
               <Link to="/ingresar" className="flex items-center gap-2 rounded-xl px-3 py-3 font-bold text-white hover:bg-white/10">

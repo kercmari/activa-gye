@@ -21,6 +21,7 @@ vi.mock('../../auth/AuthContext', () => ({
   }),
 }));
 vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: (n: number) => n === 1,
   useSettings: () => ({
     settings: { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2 },
     loading: false,
