@@ -157,7 +157,9 @@ test('con la fase 1 sola, el menú de cuenta no muestra Mi panel, Notificaciones
     await page.goto('/');
     await page.getByRole('button', { name: /Menú de cuenta de/ }).click();
     const menu = page.getByRole('menu');
-    await expect(menu.getByRole('link', { name: 'Mi plan' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Mi perfil' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Administración' })).toBeVisible();
+    await expect(menu.getByRole('link', { name: 'Mi plan' })).toHaveCount(0); // «Mi plan» es solo del paciente
     await expect(menu.getByRole('link', { name: 'Mi panel' })).toHaveCount(0);
     await expect(menu.getByRole('link', { name: 'Notificaciones' })).toHaveCount(0);
     await expect(menu.getByRole('link', { name: 'Panel nutricionista' })).toHaveCount(0);
