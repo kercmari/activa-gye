@@ -15,6 +15,7 @@ import type {
   SignUpInput,
 } from '../types';
 import { AppError } from '../types';
+import { downscaleToBlob } from '../../lib/image';
 import { supabase } from './client';
 import { toAppError, unwrap } from './errors';
 
@@ -54,6 +55,47 @@ async function loadSession(user: Pick<User, 'id' | 'email'>): Promise<Session> {
 
 /** Lugar embebido en favorites: con sus deportes. */
 type FavoritePlace = Place & { place_sports?: { sport_id: string }[] };
+
+/** Bucket privado de fotos de perfil y su vida útil de URL firmada. */
+const AVATAR_BUCKET = 'avatars';
+const AVATAR_URL_SECONDS = 3600;
+/** Clave de localStorage para la foto que se guarda antes de confirmar el correo. */
+const fotoPendienteKey = (email: string) => `activa.fotoPendiente.${email}`;
+
+/** Ruta del bucket para la foto de `uid`. */
+const avatarPathFor = (uid: string) => `${uid}/avatar.jpg`;
+
+/** Blob → data URL (para guardar la foto pendiente en localStorage). */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(String(lector.result));
+    lector.onerror = () => reject(new AppError('FOTO_INVALIDA', 'La foto debe ser JPG, PNG o WebP de hasta 5 MB.'));
+    lector.readAsDataURL(blob);
+  });
+}
+
+/** Data URL → Blob JPEG. */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [cabecera, base64] = dataUrl.split(',');
+  const tipo = /data:([^;]+)/.exec(cabecera)?.[1] ?? 'image/jpeg';
+  const binario = atob(base64);
+  const bytes = new Uint8Array(binario.length);
+  for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+  return new Blob([bytes], { type: tipo });
+}
+
+/** Sube la foto de `uid` (reemplaza) y guarda avatar_path en su perfil. Devuelve el perfil actualizado. */
+async function subirFoto(uid: string, blob: Blob): Promise<Profile> {
+  const path = avatarPathFor(uid);
+  const { error } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(path, blob, { upsert: true, contentType: 'image/jpeg' });
+  if (error) throw toAppError(error);
+  return unwrap(
+    await supabase.from('profiles').update({ avatar_path: path }).eq('id', uid).select('*').single(),
+  ) as Profile;
+}
 
 /** Lee el perfil y avisa a quien escucha perfil/sesión. Se usa tras editar el perfil. */
 function avisarCambio(): void {
@@ -109,6 +151,19 @@ async function isFavorite(placeId: string): Promise<boolean> {
   return fila !== null;
 }
 
+/** Sube la foto que quedó pendiente al confirmar el correo y la borra. Si falla, no rompe el ingreso. */
+async function subirFotoPendiente(email: string, uid: string): Promise<void> {
+  const clave = fotoPendienteKey(email);
+  const guardada = localStorage.getItem(clave);
+  if (!guardada) return;
+  try {
+    await subirFoto(uid, dataUrlToBlob(guardada));
+    localStorage.removeItem(clave);
+  } catch {
+    // Queda guardada para el siguiente ingreso; el perfil pide la foto mientras tanto.
+  }
+}
+
 export const accountPart: Partial<Repo> = {
   getSession,
 
@@ -133,7 +188,16 @@ export const accountPart: Partial<Repo> = {
 
   async signUp(input: SignUpInput) {
     const email = input.email.trim().toLowerCase();
-    const cupoLleno = (s: AppSettings) => !s.phase3 && s.patients_count >= s.patient_limit;
+    const esPaciente = input.account_type === 'paciente';
+    // El cupo solo frena a pacientes: una nutricionista entra en revisión aunque el cupo esté lleno.
+    const cupoLleno = (s: AppSettings) => esPaciente && !s.phase3 && s.patients_count >= s.patient_limit;
+
+    if (input.account_type !== 'paciente' && input.account_type !== 'nutricionista') {
+      throw new AppError('DATOS_INVALIDOS', DATOS_INVALIDOS);
+    }
+    // La foto se valida antes de crear nada: si falla, no hay cuenta a medio crear.
+    if (!input.photo) throw new AppError('FOTO_REQUERIDA', 'Agrega una foto tuya.');
+    const foto = await downscaleToBlob(input.photo, 512);
 
     const antes = await getSettings();
     if (cupoLleno(antes)) throw new AppError('CUPO_LLENO', 'Por ahora no hay cupos para nuevos pacientes. Inténtalo más adelante.');
@@ -142,7 +206,13 @@ export const accountPart: Partial<Repo> = {
     const { data, error } = await supabase.auth.signUp({
       email,
       password: input.password,
-      options: { data: { full_name: input.full_name.trim(), birth_date: input.birth_date } },
+      options: {
+        data: {
+          full_name: input.full_name.trim(),
+          birth_date: input.birth_date,
+          account_type: input.account_type,
+        },
+      },
     });
     if (error) {
       if (error.message.includes('Database error saving new user')) {
@@ -154,13 +224,22 @@ export const accountPart: Partial<Repo> = {
       throw toAppError(error);
     }
     if (!data.user || !data.session) {
+      // Sin sesión (hay que confirmar el correo): la foto espera en este navegador hasta el primer ingreso.
+      localStorage.setItem(fotoPendienteKey(email), await blobToDataUrl(foto));
       throw new AppError('CORREO_SIN_CONFIRMAR', 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.');
+    }
+    // Con sesión, la cuenta ya existe: si la foto falla, el registro se conserva y el perfil pide la foto.
+    try {
+      await subirFoto(data.user.id, foto);
+    } catch {
+      // Se muestra «Agrega tu foto» en el perfil.
     }
     return loadSession(data.user);
   },
 
   async signIn(email: string, password: string) {
-    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    const correo = email.trim().toLowerCase();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: correo, password });
     if (error) {
       if (/email not confirmed/i.test(error.message)) {
         throw new AppError('CORREO_SIN_CONFIRMAR', 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.');
@@ -168,6 +247,7 @@ export const accountPart: Partial<Repo> = {
       throw toAppError(error);
     }
     if (!data.user) throw new AppError('CREDENCIALES', 'Correo o contraseña incorrectos.');
+    await subirFotoPendiente(correo, data.user.id);
     return loadSession(data.user);
   },
 
@@ -187,6 +267,23 @@ export const accountPart: Partial<Repo> = {
     ) as Profile;
     avisarCambio();
     return profile;
+  },
+
+  async uploadAvatar(file: File) {
+    const id = await currentUserId();
+    const foto = await downscaleToBlob(file, 512);
+    const profile = await subirFoto(id, foto);
+    avisarCambio();
+    return profile;
+  },
+
+  async avatarUrl(path: string | null) {
+    if (!path) return null;
+    const { data, error } = await supabase.storage
+      .from(AVATAR_BUCKET)
+      .createSignedUrl(path, AVATAR_URL_SECONDS);
+    if (error) throw toAppError(error);
+    return data.signedUrl;
   },
 
   async deleteMyAccount() {
@@ -254,8 +351,17 @@ export const accountPart: Partial<Repo> = {
   },
 
   async adminListUsers(search?: string) {
-    const rows = unwrap(await supabase.rpc('admin_list_users', { search: search ?? null }));
-    return rows as AdminUser[];
+    const rows = unwrap(await supabase.rpc('admin_list_users', { search: search ?? null })) as AdminUser[];
+    return rows.map((r) => ({
+      ...r,
+      requested_role: r.requested_role ?? null,
+      nutri_status: r.nutri_status ?? null,
+      avatar_path: r.avatar_path ?? null,
+    }));
+  },
+
+  async adminReviewNutri(userId: string, approve: boolean) {
+    unwrap(await supabase.rpc('admin_review_nutri', { target: userId, approve }));
   },
 
   async adminSetRole(userId: string, role: Role) {

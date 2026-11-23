@@ -79,12 +79,29 @@ export interface Profile {
   role: Role;
   created_at: string;
   updated_at: string;
+  /** Ruta en el bucket privado `avatars` ('<user_id>/avatar.jpg'). */
+  avatar_path?: string | null;
+  /** Solicitud de rol pendiente: solo 'nutricionista' (lo pone el registro, no la página). */
+  requested_role?: 'nutricionista' | null;
+  nutri_status?: NutriStatus | null;
 }
+/** Estado de la solicitud de nutricionista (la aprueba el admin). */
+export type NutriStatus = 'pendiente' | 'aprobado' | 'rechazado';
+/** Tipo de cuenta que elige quien se registra. */
+export type AccountType = 'paciente' | 'nutricionista';
 export type ProfilePatch = Partial<Pick<Profile, 'full_name' | 'birth_date' | 'sex' | 'phone' | 'sector_id' | 'goal' | 'activity_level'>>;
 
 export interface Session { user: { id: string; email: string }; profile: Profile }
 
-export interface SignUpInput { email: string; password: string; full_name: string; birth_date: string }
+export interface SignUpInput {
+  email: string;
+  password: string;
+  full_name: string;
+  birth_date: string;
+  account_type: AccountType;
+  /** Foto obligatoria: sin ella responde FOTO_REQUERIDA y no crea la cuenta. */
+  photo?: File;
+}
 
 export interface ProgressEntry {
   id: string;
@@ -447,7 +464,16 @@ export interface PatientSubscription {
 export interface ContactInput { name: string; email: string; subject: string; message: string }
 export interface ContactMessage extends ContactInput { id: string; read: boolean; created_at: string }
 
-export interface AdminUser { id: string; email: string; full_name: string; role: Role; created_at: string }
+export interface AdminUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: Role;
+  created_at: string;
+  requested_role?: 'nutricionista' | null;
+  nutri_status?: NutriStatus | null;
+  avatar_path?: string | null;
+}
 
 /** Error con código fijo y mensaje en español listo para mostrar. */
 export class AppError extends Error {
@@ -464,7 +490,7 @@ export class AppError extends Error {
  * Errores: siempre AppError con mensaje en español. Códigos usados:
  * SIN_SESION, CREDENCIALES, CORREO_EN_USO, MENOR_DE_16, SOLO_ADMIN, SOLO_NUTRICIONISTA, NO_EXISTE,
  * YA_TOMADA, FOTO_SIN_CONSENTIMIENTO, FOTO_MENOR_18, FOTO_INVALIDA, DEMASIADOS_MENSAJES, DATOS_INVALIDOS,
- * NO_PUEDES_CAMBIAR_TU_ROL,
+ * NO_PUEDES_CAMBIAR_TU_ROL, FOTO_REQUERIDA (registro sin foto), SIN_SOLICITUD (revisar sin solicitud pendiente),
  * CUPO_LLENO (registro con cupo de pacientes lleno), FASE_NO_ACTIVA (la fase está apagada),
  * FALTA_FICHA (pedir nutricionista sin ficha), YA_TIENES_SOLICITUD, SIN_SUSCRIPCION (nutricionista sin suscripción activa),
  * CUPO_PLAN_LLENO (nutricionista sin cupo en su plan), YA_TIENES_SUSCRIPCION, NO_ES_TU_PACIENTE, NO_PERMITIDO,
@@ -491,6 +517,10 @@ export interface Repo {
   requestPasswordReset(email: string): Promise<void>;
   updateProfile(patch: ProfilePatch): Promise<Profile>;
   deleteMyAccount(): Promise<void>;
+  /** Valida (FOTO_INVALIDA), reduce a lado 512 JPEG, sube a `avatars/<uid>/avatar.jpg` (reemplaza) y guarda `avatar_path`. */
+  uploadAvatar(file: File): Promise<Profile>;
+  /** URL firmada de 1 h para una foto del bucket `avatars`, o null si no hay ruta. */
+  avatarUrl(path: string | null): Promise<string | null>;
 
   // Favoritos (con sesión)
   listFavorites(): Promise<Place[]>;
@@ -514,6 +544,8 @@ export interface Repo {
   adminMarkMessageRead(id: string, read: boolean): Promise<void>;
   adminListUsers(search?: string): Promise<AdminUser[]>;
   adminSetRole(userId: string, role: Role): Promise<void>;
+  /** Aprueba (rol nutricionista) o rechaza una solicitud pendiente. Sin solicitud pendiente → SIN_SOLICITUD. */
+  adminReviewNutri(userId: string, approve: boolean): Promise<void>;
 
   // ---------------------------------------------------------------- Fases
   /** Público (sin sesión). En el simulador: fase 1 encendida, 2 y 3 apagadas. */
