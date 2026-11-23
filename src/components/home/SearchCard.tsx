@@ -1,6 +1,7 @@
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
+import { usePhase } from '../../auth/SettingsContext';
 import { repo, type Sector, type Sport, type ServiceId } from '../../data';
 import { Button } from '../ui/Button';
 import { SelectField, TextField } from '../ui/Field';
@@ -38,6 +39,8 @@ const EMPTY: SearchState = {
 
 /** Buscador de la portada. Lleva a /lugares con los filtros en la URL. */
 export default function SearchCard() {
+  // Precio y horario solo con la fase 3 encendida: si está apagada no se muestran ni se buscan.
+  const verPrecios = usePhase(3);
   const navigate = useNavigate();
   const [state, setState] = useState<SearchState>(EMPTY);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -94,12 +97,16 @@ export default function SearchCard() {
           <option value="">Todas las actividades</option>
           {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </SelectField>
-        <SelectField label="Precio" value={state.precio} onChange={(e) => set('precio', e.target.value)}>
-          {PRICE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </SelectField>
-        <SelectField label="Horario" value={state.horario} onChange={(e) => set('horario', e.target.value)}>
-          {SCHEDULE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </SelectField>
+        {verPrecios ? (
+          <>
+            <SelectField label="Precio" value={state.precio} onChange={(e) => set('precio', e.target.value)}>
+              {PRICE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </SelectField>
+            <SelectField label="Horario" value={state.horario} onChange={(e) => set('horario', e.target.value)}>
+              {SCHEDULE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </SelectField>
+          </>
+        ) : null}
       </div>
 
       <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

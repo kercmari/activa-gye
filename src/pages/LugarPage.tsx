@@ -163,11 +163,11 @@ export default function LugarPage() {
 
           {place.source === 'osm' ? (
             <p role="note" className="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-              Datos de OpenStreetMap. Confirma precios y horarios con el lugar.
+              {fase3 ? 'Datos de OpenStreetMap. Confirma precios y horarios con el lugar.' : 'Datos de OpenStreetMap. Confirma los datos con el lugar.'}
             </p>
           ) : null}
 
-          <div className={CARD}>
+          {fase3 ? <div className={CARD}>
             <h2 className="display text-2xl text-navy-900">Horario</h2>
             {place.hours === null ? (
               <p className="mt-4 font-semibold text-slate-600">Horario por confirmar</p>
@@ -197,18 +197,27 @@ export default function LugarPage() {
                 <p className="mt-3 text-xs text-slate-400">{summarizeHours(place.hours)}</p>
               </>
             )}
-          </div>
+          </div> : null}
 
-          <div className={CARD}>
-            <h2 className="display text-2xl text-navy-900">Precio y promociones</h2>
-            <p className="mt-4 text-2xl font-extrabold text-navy-900">{formatPrice(place)}</p>
-            {place.price_note?.trim() ? <p className="mt-2 text-slate-600">{place.price_note}</p> : null}
-            {place.promotions?.trim() ? (
+          {fase3 ? (
+            <div className={CARD}>
+              <h2 className="display text-2xl text-navy-900">Precio y promociones</h2>
+              <p className="mt-4 text-2xl font-extrabold text-navy-900">{formatPrice(place)}</p>
+              {place.price_note?.trim() ? <p className="mt-2 text-slate-600">{place.price_note}</p> : null}
+              {place.promotions?.trim() ? (
+                <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-brand-orange-dark">
+                  {place.promotions}
+                </div>
+              ) : null}
+            </div>
+          ) : place.promotions?.trim() ? (
+            <div className={CARD}>
+              <h2 className="display text-2xl text-navy-900">Promociones</h2>
               <div className="mt-5 rounded-2xl bg-orange-50 p-4 text-sm font-semibold text-brand-orange-dark">
                 {place.promotions}
               </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           <div className={CARD}>
             <h2 className="display text-2xl text-navy-900">Servicios</h2>
@@ -247,7 +256,7 @@ export default function LugarPage() {
           ) : null}
 
           {verified ? (
-            <p className="text-sm text-slate-500">Datos verificados el {verified}. Confirma precios con el lugar.</p>
+            <p className="text-sm text-slate-500">{fase3 ? `Datos verificados el ${verified}. Confirma precios con el lugar.` : `Datos verificados el ${verified}.`}</p>
           ) : null}
         </div>
 

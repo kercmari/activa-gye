@@ -6,6 +6,7 @@ import BackButton from '../components/ui/BackButton';
 import { Button, LinkButton } from '../components/ui/Button';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../components/ui/States';
 import { repo, type Place, type Sector } from '../data';
+import { usePhase } from '../auth/SettingsContext';
 import { formatPrice, placeImage, summarizeHours } from '../lib/format';
 import { isOpenNow } from '../lib/hours';
 
@@ -23,6 +24,8 @@ interface Row {
 }
 
 export default function CompararPage() {
+  // Precio, horario y «Abierto ahora» solo con la fase 3 encendida.
+  const verPrecios = usePhase(3);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const idsRaw = searchParams.get('ids') ?? '';
@@ -108,14 +111,17 @@ export default function CompararPage() {
 
   const sectorName = (place: Place) => sectors.find((s) => s.id === place.sector_id)?.name ?? 'Guayaquil';
 
-  const rows: Row[] = [
-    { label: 'Sector', value: (p) => sectorName(p) },
+  const datosPrecio: Row[] = verPrecios ? [
     { label: 'Precio', value: (p) => formatPrice(p) },
     { label: 'Horario', value: (p) => summarizeHours(p.hours) },
     {
       label: 'Abierto ahora',
       value: (p) => (p.hours === null ? 'Horario por confirmar' : isOpenNow(p.hours) ? 'Sí' : 'No'),
     },
+  ] : [];
+  const rows: Row[] = [
+    { label: 'Sector', value: (p) => sectorName(p) },
+    ...datosPrecio,
     { label: 'Promociones', value: (p) => p.promotions?.trim() || '—' },
     ...SERVICE_OPTIONS.map((s) => ({
       label: s.label,

@@ -4,7 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Place } from '../data';
 import LugaresPage from './LugaresPage';
 
-const { searchPlaces } = vi.hoisted(() => ({ searchPlaces: vi.fn() }));
+const { searchPlaces, fases } = vi.hoisted(() => ({ searchPlaces: vi.fn(), fases: { fase3: false } }));
+
+vi.mock('../auth/SettingsContext', () => ({
+  usePhase: (n: number) => (n === 3 ? fases.fase3 : true),
+}));
 
 vi.mock('../data', () => ({
   repo: {
@@ -82,5 +86,30 @@ describe('LugaresPage', () => {
     expect(screen.getByRole('link', { name: 'Comparar (3)' })).toBeInTheDocument();
     // Con 3 elegidos, la cuarta casilla queda deshabilitada con el texto "Máximo 3".
     expect(screen.getByRole('checkbox', { name: 'Máximo 3' })).toBeDisabled();
+  });
+});
+
+describe('LugaresPage · filtros de precio y horario solo con la fase 3', () => {
+  beforeEach(() => {
+    searchPlaces.mockReset();
+    searchPlaces.mockResolvedValue(PLACES);
+  });
+
+  it('con fase 3 apagada no muestra los filtros y ignora ?precio= y ?horario= de la URL', async () => {
+    fases.fase3 = false;
+    renderAt('/lugares?precio=gratis&horario=manana');
+    await waitFor(() => expect(searchPlaces).toHaveBeenCalled());
+    expect(searchPlaces).toHaveBeenLastCalledWith({});
+    expect(screen.queryByLabelText('Precio')).toBeNull();
+    expect(screen.queryByLabelText('Horario')).toBeNull();
+    expect(screen.getByLabelText('Zona o sector')).toBeInTheDocument();
+  });
+
+  it('con fase 3 encendida muestra los filtros y aplica ?precio=', async () => {
+    fases.fase3 = true;
+    renderAt('/lugares?precio=gratis');
+    await waitFor(() => expect(searchPlaces).toHaveBeenCalledWith({ price: 'gratis' }));
+    expect(screen.getByLabelText('Precio')).toBeInTheDocument();
+    expect(screen.getByLabelText('Horario')).toBeInTheDocument();
   });
 });

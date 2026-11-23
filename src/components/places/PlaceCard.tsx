@@ -1,5 +1,6 @@
 import { Clock, MapPin, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
+import { usePhase } from '../../auth/SettingsContext';
 import type { Place } from '../../data/types';
 import { formatPrice, placeImage, summarizeHours } from '../../lib/format';
 
@@ -23,7 +24,9 @@ interface Props {
 export default function PlaceCard({ place, sectorName, sportName, distanceKm, compare }: Props) {
   const description = place.description?.trim() || `Lugar deportivo en ${sectorName}`;
   const distance = distanceKm === undefined ? null : `a ${distanceKm.toFixed(1).replace('.', ',')} km`;
-  const showOsmNote = place.source === 'osm' && (place.price_from === null || place.price_from === undefined);
+  // Precios y horarios solo con la fase 3 encendida (regla de la dueña: fase 1 y 2 no los muestran).
+  const verPrecios = usePhase(3);
+  const showOsmNote = verPrecios && place.source === 'osm' && (place.price_from === null || place.price_from === undefined);
 
   return (
     <article className="relative flex flex-col overflow-hidden rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
@@ -44,18 +47,20 @@ export default function PlaceCard({ place, sectorName, sportName, distanceKm, co
 
         <div className="mt-5 border-t border-slate-100 pt-4">
           <div className="flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-sm text-slate-500">
-                <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>{summarizeHours(place.hours)}</span>
-              </p>
-              <p className="mt-1 font-extrabold text-navy-900">{formatPrice(place)}</p>
-              {showOsmNote ? <p className="mt-1 text-xs text-slate-400">Datos de OpenStreetMap</p> : null}
-            </div>
+            {verPrecios ? (
+              <div className="min-w-0">
+                <p className="flex items-center gap-1.5 text-sm text-slate-500">
+                  <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{summarizeHours(place.hours)}</span>
+                </p>
+                <p className="mt-1 font-extrabold text-navy-900">{formatPrice(place)}</p>
+                {showOsmNote ? <p className="mt-1 text-xs text-slate-400">Datos de OpenStreetMap</p> : null}
+              </div>
+            ) : null}
             <Link
               to={`/lugares/${place.id}`}
               aria-label={`Ver ${place.name}`}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-brand-blue transition-colors after:absolute after:inset-0 after:content-[''] hover:bg-sky-100"
+              className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-50 text-brand-blue transition-colors after:absolute after:inset-0 after:content-[''] hover:bg-sky-100"
             >
               <ArrowRight className="h-5 w-5" aria-hidden="true" />
             </Link>

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import PlaceCard from '../components/places/PlaceCard';
 import PlaceMap from '../components/places/PlaceMap';
+import { usePhase } from '../auth/SettingsContext';
 import { PRICE_OPTIONS, SCHEDULE_OPTIONS, SERVICE_OPTIONS } from '../components/places/placeOptions';
 import { Button, LinkButton } from '../components/ui/Button';
 import { SelectField, TextField } from '../components/ui/Field';
@@ -19,8 +20,8 @@ const PRICE_VALUES: string[] = PRICE_OPTIONS.map((o) => o.value).filter(Boolean)
 const SCHEDULE_VALUES: string[] = SCHEDULE_OPTIONS.map((o) => o.value).filter(Boolean);
 const SERVICE_IDS: string[] = SERVICE_OPTIONS.map((o) => o.id);
 
-/** Lee los filtros de la URL. Lo vacío o inválido no filtra. */
-function filtersFromParams(params: URLSearchParams): PlaceFilters {
+/** Lee los filtros de la URL. Lo vacío o inválido no filtra. Precio y horario solo con la fase 3: si está apagada se ignoran. */
+function filtersFromParams(params: URLSearchParams, verPrecios: boolean): PlaceFilters {
   const filters: PlaceFilters = {};
   const name = params.get('nombre')?.trim();
   if (name) filters.name = name;
@@ -28,10 +29,12 @@ function filtersFromParams(params: URLSearchParams): PlaceFilters {
   if (sector) filters.sector = sector;
   const sport = params.get('deporte');
   if (sport) filters.sport = sport;
-  const price = params.get('precio');
-  if (price && PRICE_VALUES.includes(price)) filters.price = price as PriceRange;
-  const schedule = params.get('horario');
-  if (schedule && SCHEDULE_VALUES.includes(schedule)) filters.schedule = schedule as ScheduleRange;
+  if (verPrecios) {
+    const price = params.get('precio');
+    if (price && PRICE_VALUES.includes(price)) filters.price = price as PriceRange;
+    const schedule = params.get('horario');
+    if (schedule && SCHEDULE_VALUES.includes(schedule)) filters.schedule = schedule as ScheduleRange;
+  }
   const services = (params.get('servicios') ?? '').split(',').filter((s) => SERVICE_IDS.includes(s)) as ServiceId[];
   if (services.length > 0) filters.services = services;
   return filters;
@@ -42,7 +45,8 @@ interface Shown { place: Place; km?: number }
 export default function LugaresPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryKey = searchParams.toString();
-  const filters = useMemo(() => filtersFromParams(new URLSearchParams(queryKey)), [queryKey]);
+  const verPrecios = usePhase(3);
+  const filters = useMemo(() => filtersFromParams(new URLSearchParams(queryKey), verPrecios), [queryKey, verPrecios]);
   const cercaOn = searchParams.get('cerca') === '1';
 
   const geo = useGeolocation();
@@ -80,7 +84,7 @@ export default function LugaresPage() {
       setError(null);
       setVisible(PAGE_SIZE);
       try {
-        const list = await repo.searchPlaces(filtersFromParams(new URLSearchParams(queryKey)));
+        const list = await repo.searchPlaces(filtersFromParams(new URLSearchParams(queryKey), verPrecios));
         if (alive) setPlaces(list);
       } catch (e: unknown) {
         if (alive) setError(errorMessage(e));
@@ -88,7 +92,7 @@ export default function LugaresPage() {
     };
     void load();
     return () => { alive = false; };
-  }, [queryKey, attempt]);
+  }, [queryKey, attempt, verPrecios]);
 
   // "Cerca de mí" en la URL: si llega sin ubicación todavía, pedirla una vez.
   const { status: geoStatus, request: requestLocation } = geo;
@@ -177,12 +181,16 @@ export default function LugaresPage() {
               <option value="">Todas las actividades</option>
               {sports.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </SelectField>
-            <SelectField label="Precio" value={filters.price ?? ''} onChange={(e) => update({ precio: e.target.value || undefined })}>
-              {PRICE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </SelectField>
-            <SelectField label="Horario" value={filters.schedule ?? ''} onChange={(e) => update({ horario: e.target.value || undefined })}>
-              {SCHEDULE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </SelectField>
+            {verPrecios ? (
+              <>
+                <SelectField label="Precio" value={filters.price ?? ''} onChange={(e) => update({ precio: e.target.value || undefined })}>
+                  {PRICE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </SelectField>
+                <SelectField label="Horario" value={filters.schedule ?? ''} onChange={(e) => update({ horario: e.target.value || undefined })}>
+                  {SCHEDULE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </SelectField>
+              </>
+            ) : null}
           </div>
 
           <fieldset className="mt-6 border-t border-slate-100 pt-6">

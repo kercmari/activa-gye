@@ -4,6 +4,7 @@ import { Link } from 'react-router';
 import ContactForm from '../components/ContactForm';
 import PlaceCard from '../components/places/PlaceCard';
 import SearchCard from '../components/home/SearchCard';
+import { usePhase } from '../auth/SettingsContext';
 import { LinkButton } from '../components/ui/Button';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../components/ui/States';
 import { repo, type Place, type Sector, type Sport } from '../data';
@@ -11,14 +12,15 @@ import { sportIcon } from '../lib/icons';
 
 interface Catalog { sectors: Sector[]; sports: Sport[]; places: Place[] }
 
-/** Lugares recomendados: primero los que tienen horario confirmado, luego por nombre. */
-function pickRecommended(places: Place[]): Place[] {
+/** Lugares recomendados. Con la fase 3 encendida: primero los que tienen horario confirmado, luego por nombre. Sin ella solo por nombre (el orden no puede delatar horarios). */
+function pickRecommended(places: Place[], verPrecios: boolean): Place[] {
   return [...places]
-    .sort((a, b) => (Number(!!b.hours) - Number(!!a.hours)) || a.name.localeCompare(b.name, 'es'))
+    .sort((a, b) => (verPrecios ? Number(!!b.hours) - Number(!!a.hours) : 0) || a.name.localeCompare(b.name, 'es'))
     .slice(0, 6);
 }
 
 export default function DeportesPage() {
+  const verPrecios = usePhase(3);
   const [data, setData] = useState<Catalog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +73,7 @@ export default function DeportesPage() {
         <Link to="/lugares" className="flex items-center justify-between gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 hover:bg-sky-50">
           <span>
             <span className="display block text-xl text-navy-900">Buscar lugares</span>
-            <span className="mt-1 block text-sm text-slate-600">Filtra por sector, precio, horario y servicios.</span>
+            <span className="mt-1 block text-sm text-slate-600">{verPrecios ? 'Filtra por sector, precio, horario y servicios.' : 'Filtra por sector, actividad y servicios.'}</span>
           </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-brand-orange" aria-hidden="true" />
         </Link>
@@ -154,7 +156,7 @@ export default function DeportesPage() {
         {data && data.places.length > 0 ? (
           <>
             <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {pickRecommended(data.places).map((place) => (
+              {pickRecommended(data.places, verPrecios).map((place) => (
                 <PlaceCard
                   key={place.id}
                   place={place}

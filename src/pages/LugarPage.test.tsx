@@ -108,3 +108,33 @@ describe('LugarPage', () => {
     await waitFor(() => expect(screen.getByRole('link', { name: 'Buscar lugares' })).toHaveAttribute('href', '/lugares'));
   });
 });
+
+describe('LugarPage · precios y horarios solo con la fase 3', () => {
+  beforeEach(() => {
+    getPlace.mockReset();
+    getPlace.mockResolvedValue({ ...PLACE, name: 'Yoga Norte', price_from: 25, price_note: 'Clase suelta', promotions: '2x1 los martes', hours: { mon: [['06:00', '22:00']], tue: [['06:00', '22:00']], wed: [['06:00', '22:00']], thu: [['06:00', '22:00']], fri: [['06:00', '22:00']], sat: [], sun: [] }, verified_at: '2026-11-21' });
+  });
+
+  it('con fase 3 apagada no muestra horario, precio ni nota de precio, pero sí las promociones', async () => {
+    fases.fase3 = false;
+    renderAt('/lugares/p1');
+    expect(await screen.findByRole('heading', { name: 'Yoga Norte' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Horario' })).toBeNull();
+    expect(screen.queryByText(/Abierto ahora|Cerrado ahora/)).toBeNull();
+    expect(screen.queryByText(/Desde \$25/)).toBeNull();
+    expect(screen.queryByText('Clase suelta')).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Precio y promociones' })).toBeNull();
+    expect(screen.queryByText(/Confirma precios/)).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Promociones' })).toBeInTheDocument();
+    expect(screen.getByText('2x1 los martes')).toBeInTheDocument();
+  });
+
+  it('con fase 3 encendida muestra horario, precio y nota de precio', async () => {
+    fases.fase3 = true;
+    renderAt('/lugares/p1');
+    expect(await screen.findByRole('heading', { name: 'Horario' })).toBeInTheDocument();
+    expect(screen.getByText(/Desde \$25/)).toBeInTheDocument();
+    expect(screen.getByText('Clase suelta')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Precio y promociones' })).toBeInTheDocument();
+  });
+});
