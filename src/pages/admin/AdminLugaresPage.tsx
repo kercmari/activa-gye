@@ -144,7 +144,7 @@ export default function AdminLugaresPage() {
         const datos = state.data;
         return (
           <>
-            <div className="overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
+            <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
               <table className="w-full min-w-[56rem] text-left text-sm">
                 <thead className="border-b border-slate-200 text-xs font-extrabold uppercase tracking-wider text-slate-500">
                   <tr>
@@ -175,13 +175,15 @@ export default function AdminLugaresPage() {
                           aria-label={`Publicado: ${p.name}`}
                           disabled={busy === p.id}
                           onClick={() => void alternar(p)}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-60 ${publicado(p) ? 'bg-brand-blue' : 'bg-slate-300'}`}
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center disabled:opacity-60"
                         >
-                          <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${publicado(p) ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          <span className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${publicado(p) ? 'bg-brand-blue' : 'bg-slate-300'}`}>
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${publicado(p) ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          </span>
                         </button>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <Link to={`/admin/lugares/${p.id}`} className="font-extrabold text-brand-blue hover:underline">Editar</Link>
+                        <Link to={`/admin/lugares/${p.id}`} className="inline-flex min-h-11 items-center font-extrabold text-brand-blue hover:underline">Editar</Link>
                       </td>
                     </tr>
                   ))}

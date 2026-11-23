@@ -160,7 +160,9 @@ export default function AdminUsuariosPage() {
       ) : null}
 
       {state.status === 'ok' && visibles.length > 0 ? (
-        <div className="overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
+        <>
+        <p className="mb-2 text-xs font-bold text-slate-500 md:hidden">Desliza la tabla para ver más columnas →</p>
+        <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
           <table className="w-full min-w-[40rem] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs font-extrabold uppercase tracking-wider text-slate-500">
               <tr>
@@ -190,7 +192,7 @@ export default function AdminUsuariosPage() {
                           value={rolDe(u)}
                           disabled={esYo || guardando}
                           onChange={(e) => elegirRol(u, e.target.value as Role)}
-                          className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-navy-900 disabled:opacity-60"
+                          className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-semibold text-navy-900 sm:text-sm disabled:opacity-60"
                         >
                           {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                         </select>
@@ -205,6 +207,7 @@ export default function AdminUsuariosPage() {
             </tbody>
           </table>
         </div>
+        </>
       ) : null}
 
       {revision ? (

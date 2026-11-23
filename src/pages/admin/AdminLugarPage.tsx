@@ -342,7 +342,7 @@ function LugarForm({ original, sectores, deportes }: { original: Place | null; s
             {DAYS.map(({ key, label }) => {
               const d = f.dias[key];
               return (
-                <div key={key} className="grid grid-cols-[6.5rem_auto_1fr_1fr] items-center gap-3">
+                <div key={key} className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-2 sm:grid-cols-[6.5rem_auto_1fr_1fr]">
                   <span className="text-sm font-bold text-navy-900">{label}</span>
                   <input
                     type="checkbox"
@@ -351,22 +351,24 @@ function LugarForm({ original, sectores, deportes }: { original: Place | null; s
                     checked={d.open}
                     onChange={(e) => setDia(key, { open: e.target.checked })}
                   />
-                  <input
-                    type="time"
-                    aria-label={`${label}: abre`}
-                    disabled={!d.open}
-                    value={d.from}
-                    onChange={(e) => setDia(key, { from: e.target.value })}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm disabled:opacity-50"
-                  />
-                  <input
-                    type="time"
-                    aria-label={`${label}: cierra`}
-                    disabled={!d.open}
-                    value={d.to}
-                    onChange={(e) => setDia(key, { to: e.target.value })}
-                    className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm disabled:opacity-50"
-                  />
+                  <div className="col-span-2 grid grid-cols-2 gap-2 sm:contents">
+                    <input
+                      type="time"
+                      aria-label={`${label}: abre`}
+                      disabled={!d.open}
+                      value={d.from}
+                      onChange={(e) => setDia(key, { from: e.target.value })}
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base sm:text-sm disabled:opacity-50"
+                    />
+                    <input
+                      type="time"
+                      aria-label={`${label}: cierra`}
+                      disabled={!d.open}
+                      value={d.to}
+                      onChange={(e) => setDia(key, { to: e.target.value })}
+                      className="min-h-11 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base sm:text-sm disabled:opacity-50"
+                    />
+                  </div>
                 </div>
               );
             })}
