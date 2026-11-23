@@ -36,7 +36,7 @@ async function abrirDiaAgenda(page: Page, diasDesdeHoy: number) {
   await celda.click();
 }
 
-test('registro → ficha → semana gratis → Día 1 → chequeo → Agenda con candado y muro', async ({ page }) => {
+test('registro → ficha → semana gratis → Día 1 → chequeo → Agenda con candado y fin de la semana gratis', async ({ page }) => {
   await conCandadoDeFases(async () => {
     await fijarFases(page, { phase1: true, phase2: false, phase3: false });
 
@@ -67,18 +67,20 @@ test('registro → ficha → semana gratis → Día 1 → chequeo → Agenda con
     // El Día 1 ya cumple: el siguiente día se abre mañana.
     await expect(page.getByText(/se abre/).first()).toBeVisible();
 
-    // 4. Agenda: Día 1 con ítems, Día 2 con candado, un día 8 o más con el muro.
+    // 4. Agenda: Día 1 con ítems, Día 2 con candado, un día 8 o más con el aviso de fin.
     await abrirDiaAgenda(page, 0);
     await expect(page.getByText(/^[1-9]\d* actividades?$/).first()).toBeVisible();
     await abrirDiaAgenda(page, 1);
     await expect(page.getByText('Este día se abre cuando completes el anterior')).toBeVisible();
     await abrirDiaAgenda(page, 7);
-    await expect(page.getByTestId('paywall-proximamente')).toBeVisible();
+    // Fase 2 apagada: el día 8 no muestra «Próximamente», solo dice que la semana gratis terminó.
+    await expect(page.getByText('Tu semana gratis terminó en el día 7.')).toBeVisible();
+    await expect(page.getByTestId('paywall-proximamente')).toHaveCount(0);
     await salir(page);
   });
 });
 
-test('ficha con Diabetes: la semana no se genera sola y se pide atención de nutricionista', async ({ page }) => {
+test('ficha con Diabetes con fase 2 apagada: la semana no se genera sola y solo se avisa, sin botón a la nutricionista', async ({ page }) => {
   await conCandadoDeFases(async () => {
     await fijarFases(page, { phase1: true, phase2: false, phase3: false });
     await registrar(page, 'Paciente Diabetes E2E');
@@ -92,8 +94,9 @@ test('ficha con Diabetes: la semana no se genera sola y se pide atención de nut
 
     await page.goto('/mi-plan/hoy');
     await page.getByRole('button', { name: 'Generar mi semana gratis', exact: true }).click();
-    await expect(page.getByText(/Tu ficha tiene condiciones de salud/)).toBeVisible();
-    await expect(page.getByText(/Pide atención directa a una nutricionista/)).toBeVisible();
+    await expect(page.getByText('Por tu condición de salud, tu plan lo armará una nutricionista. Te avisaremos cuando esté disponible.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Pedir atención a una nutricionista', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Volver a mi perfil', exact: true })).toHaveAttribute('href', '/perfil');
     await expect(page.getByRole('heading', { name: /Día \d de 7/ })).toHaveCount(0);
     await salir(page);
   });

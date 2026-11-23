@@ -21,7 +21,7 @@ test.afterAll(async ({ browser }) => {
   await page.close();
 });
 
-test('registro → Mi ficha con foto → guardar → recargar la conserva; calendario y pagos «Próximamente»', async ({ page }) => {
+test('registro → Mi ficha con foto → guardar → recargar la conserva; con fase 2 apagada sus pestañas no aparecen', async ({ page }) => {
   await conCandadoDeFases(async () => {
     await fijarFases(page, { phase1: true, phase2: false, phase3: false });
 
@@ -37,13 +37,10 @@ test('registro → Mi ficha con foto → guardar → recargar la conserva; calen
     await expect(page.getByRole('button', { name: 'Quitar foto' })).toBeVisible();
     await expect(page.getByRole('status').filter({ hasText: 'Ficha guardada' })).toHaveCount(0);
 
-    // Calendario y Pagos: visibles pero bloqueados mientras la fase 2 está apagada.
-    await page.getByRole('tab', { name: 'Calendario y progreso' }).click();
-    await expect(page.getByText('Próximamente', { exact: true }).first()).toBeVisible();
-    await expectVolver(page);
-    await page.getByRole('tab', { name: 'Pagos' }).click();
-    await expect(page.getByText('Próximamente', { exact: true }).first()).toBeVisible();
-    await expectVolver(page);
+    // Calendario y Pagos (fase 2) apagada: sus pestañas no existen y no hay avisos «Próximamente».
+    await expect(page.getByRole('tab', { name: 'Calendario y progreso' })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: 'Pagos' })).toHaveCount(0);
+    await expect(page.getByText('Próximamente', { exact: true })).toHaveCount(0);
 
     await salir(page);
   });
