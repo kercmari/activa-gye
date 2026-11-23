@@ -5,6 +5,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { usePhase } from '../../auth/SettingsContext';
 import { repo, type Session } from '../../data';
 import { LinkButton } from '../ui/Button';
+import Avatar from '../profile/Avatar';
 import NotificationBell from '../NotificationBell';
 
 export const NAV_ITEMS = [
@@ -18,10 +19,6 @@ export const NAV_ITEMS = [
 function canSeePanel(session: Session | null): boolean {
   const role = session?.profile.role;
   return role === 'nutricionista' || role === 'admin';
-}
-
-function initial(session: Session): string {
-  return session.profile.full_name.trim().charAt(0).toUpperCase() || '?';
 }
 
 /** Enlaces de la cuenta con sesión (se usan en el menú de escritorio y en el móvil). */
@@ -139,9 +136,7 @@ export function Header() {
                 onClick={() => setAccountOpen((v) => !v)}
                 className="flex items-center gap-1.5 rounded-full bg-white/10 py-1 pl-1 pr-2 transition-colors hover:bg-white/20"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-blue text-sm font-extrabold">
-                  {initial(session)}
-                </span>
+                <Avatar path={session.profile.avatar_path} name={session.profile.full_name} size="sm" />
                 <ChevronDown className="h-4 w-4" aria-hidden="true" />
               </button>
               <div

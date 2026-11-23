@@ -14,6 +14,10 @@ vi.mock('../../auth/SettingsContext', () => ({
   usePhase: vi.fn(),
 }));
 
+vi.mock('../../data', () => ({
+  repo: { avatarUrl: vi.fn(async () => 'https://fotos.test/lucia.jpg'), signOut: vi.fn() },
+}));
+
 vi.mock('../NotificationBell', async () => {
   const { createElement } = await import('react');
   return { default: () => createElement('span', { 'data-testid': 'campana' }, 'campana') };
@@ -117,5 +121,26 @@ describe('Header', () => {
 
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('navigation', { name: 'Menú móvil' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Header · foto de cuenta', () => {
+  it('muestra la foto del perfil en el círculo de cuenta si hay avatar_path', async () => {
+    const session = sessionFor('usuario') as never as { profile: Record<string, unknown> };
+    session.profile.avatar_path = 'u1/avatar.jpg';
+    vi.mocked(usePhase).mockReturnValue(false);
+    vi.mocked(useAuth).mockReturnValue({ session: session as never, loading: false, refresh: async () => {} });
+    renderHeader();
+    const boton = screen.getByRole('button', { name: 'Menú de cuenta de Lucía Mora' });
+    await vi.waitFor(() => expect(boton.querySelector('img')).toHaveAttribute('src', 'https://fotos.test/lucia.jpg'));
+  });
+
+  it('sin foto muestra la inicial del nombre', async () => {
+    vi.mocked(usePhase).mockReturnValue(false);
+    vi.mocked(useAuth).mockReturnValue({ session: sessionFor('usuario') as never, loading: false, refresh: async () => {} });
+    renderHeader();
+    const boton = screen.getByRole('button', { name: 'Menú de cuenta de Lucía Mora' });
+    expect(boton.querySelector('img')).toBeNull();
+    expect(boton).toHaveTextContent('L');
   });
 });
