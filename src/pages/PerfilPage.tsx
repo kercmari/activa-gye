@@ -2,10 +2,12 @@ import { useRef, useState, type KeyboardEvent } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { repo } from '../data';
 import { useAuth } from '../auth/AuthContext';
+import { usePhase } from '../auth/SettingsContext';
 import BackButton from '../components/ui/BackButton';
 import Badge from '../components/ui/Badge';
 import { Button, LinkButton } from '../components/ui/Button';
 import { errorMessage } from '../components/ui/States';
+import Avatar from '../components/profile/Avatar';
 import DataTab from '../components/profile/DataTab';
 import FavoritesTab from '../components/profile/FavoritesTab';
 import { ROLE_LABELS } from '../components/profile/labels';
@@ -23,6 +25,7 @@ function isTab(value: string | null): value is TabId {
 /** Mi perfil: cabecera de la cuenta y pestañas (datos, favoritos). Ficha, calendario y pagos están en /mi-panel. */
 export default function PerfilPage() {
   const { session, refresh } = useAuth();
+  const phase2 = usePhase(2);
   const navigate = useNavigate();
   const location = useLocation();
   const [params, setParams] = useSearchParams();
@@ -76,12 +79,7 @@ export default function PerfilPage() {
           <BackButton fallback="/" className="-ml-2 mb-6 text-white hover:bg-white/10" />
           <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-5">
-              <div
-                aria-hidden="true"
-                className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-brand-blue text-4xl font-extrabold"
-              >
-                {profile.full_name.trim().charAt(0).toUpperCase() || '?'}
-              </div>
+              <Avatar path={profile.avatar_path} name={profile.full_name} size="xl" />
               <div className="min-w-0">
                 <p className="eyebrow !text-brand-blue">Mi cuenta</p>
                 <h1 className="display mt-2 break-words text-3xl text-white md:text-4xl">{profile.full_name}</h1>
@@ -115,14 +113,32 @@ export default function PerfilPage() {
             Cambios guardados
           </div>
         ) : null}
-
-        <div className="mb-8 flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="display text-2xl text-navy-900">Mi panel: ficha, calendario y pagos</h2>
-            <p className="mt-2 text-slate-600">Tu ficha, tu calendario y tus pagos están en un solo lugar.</p>
+        {profile.requested_role === 'nutricionista' && profile.nutri_status === 'pendiente' ? (
+          <div role="status" className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4 font-semibold text-blue-800">
+            Tu solicitud de nutricionista está en revisión. El equipo la aprueba y te avisamos.
           </div>
-          <LinkButton to="/mi-panel" variant="primary" className="shrink-0">Abrir mi panel</LinkButton>
-        </div>
+        ) : null}
+        {profile.requested_role === 'nutricionista' && profile.nutri_status === 'rechazado' ? (
+          <div role="status" className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 font-semibold text-amber-800">
+            Tu solicitud de nutricionista no fue aprobada. Tu cuenta sigue como paciente.
+          </div>
+        ) : null}
+        {!profile.avatar_path ? (
+          <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 md:flex-row md:items-center md:justify-between">
+            <p className="font-semibold text-amber-800">Agrega tu foto para que tu perfil se vea completo.</p>
+            <LinkButton to="/perfil/editar" variant="primary" size="md" className="shrink-0">Agregar foto</LinkButton>
+          </div>
+        ) : null}
+
+        {phase2 ? (
+          <div className="mb-8 flex flex-col gap-4 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="display text-2xl text-navy-900">Mi panel: ficha, calendario y pagos</h2>
+              <p className="mt-2 text-slate-600">Tu ficha, tu calendario y tus pagos están en un solo lugar.</p>
+            </div>
+            <LinkButton to="/mi-panel" variant="primary" className="shrink-0">Abrir mi panel</LinkButton>
+          </div>
+        ) : null}
 
         <div role="tablist" aria-label="Secciones de mi perfil" className="mb-8 flex gap-2 overflow-x-auto rounded-2xl bg-white p-2 shadow-sm">
           {TABS.map((t, i) => {

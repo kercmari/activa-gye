@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router';
 import { repo } from '../data';
 import type { ActivityLevel, Goal, Profile, Sector, Sex } from '../data/types';
 import { useAuth } from '../auth/AuthContext';
+import AvatarField from '../components/profile/AvatarField';
+import { useAvatarUrl } from '../components/profile/useAvatarUrl';
 import ConfirmDialog from '../components/profile/ConfirmDialog';
 import { ACTIVITY_LABELS, GOAL_LABELS, SEX_LABELS, ageFrom, todayISO } from '../components/profile/labels';
 import { useAsync } from '../components/profile/useAsync';
@@ -79,8 +81,30 @@ function EditForm({ profile, sectors }: { profile: Profile; sectors: Sector[] })
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const fotoGuardada = useAvatarUrl(profile.avatar_path);
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoSaving, setFotoSaving] = useState(false);
+  const [fotoError, setFotoError] = useState<string | null>(null);
+  const [fotoAviso, setFotoAviso] = useState<string | null>(null);
 
   const set = (key: keyof EditValues) => (value: string) => setValues((prev) => ({ ...prev, [key]: value }));
+
+  const guardarFoto = async () => {
+    if (!foto) return;
+    setFotoSaving(true);
+    setFotoError(null);
+    setFotoAviso(null);
+    try {
+      await repo.uploadAvatar(foto);
+      await refresh();
+      setFoto(null);
+      setFotoAviso('Foto actualizada.');
+    } catch (error) {
+      setFotoError(errorMessage(error));
+    } finally {
+      setFotoSaving(false);
+    }
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -125,6 +149,27 @@ function EditForm({ profile, sectors }: { profile: Profile; sectors: Sector[] })
 
   return (
     <div className="flex flex-col gap-10">
+      <section aria-labelledby="foto-perfil" className="flex flex-col gap-6 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:p-8">
+        <div>
+          <h2 id="foto-perfil" className="display text-xl text-navy-900">Foto de perfil</h2>
+          <p className="mt-2 text-slate-600">Es la que ven tu nutricionista y el equipo al revisar tu cuenta.</p>
+        </div>
+        <AvatarField
+          savedUrl={fotoGuardada}
+          value={foto}
+          onChange={(f) => { setFoto(f); setFotoError(null); setFotoAviso(null); }}
+          error={fotoError}
+          label={profile.avatar_path ? 'Cambiar foto' : 'Elegir foto'}
+          disabled={fotoSaving}
+        />
+        {fotoAviso ? <p role="status" className="rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">{fotoAviso}</p> : null}
+        <div>
+          <Button variant="primary" onClick={() => void guardarFoto()} disabled={!foto || fotoSaving}>
+            {fotoSaving ? 'Guardando foto…' : 'Guardar foto'}
+          </Button>
+        </div>
+      </section>
+
       <form onSubmit={submit} noValidate className="flex flex-col gap-6 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:p-8">
         <div className="grid gap-6 md:grid-cols-2">
           <div className="md:col-span-2">

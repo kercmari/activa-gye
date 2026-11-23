@@ -1,15 +1,16 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { repo } from '../data';
 import { useAuth } from '../auth/AuthContext';
 import { useSettings } from '../auth/SettingsContext';
 import AuthShell from '../components/profile/AuthShell';
+import AvatarField from '../components/profile/AvatarField';
 import PasswordField from '../components/profile/PasswordField';
 import { ageFrom, todayISO } from '../components/profile/labels';
 import { buttonClasses } from '../components/ui/Button';
 import { TextField } from '../components/ui/Field';
 import { errorMessage } from '../components/ui/States';
-import { AppError } from '../data/types';
+import { AppError, type AccountType } from '../data/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STRENGTH = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Fuerte'];
@@ -22,9 +23,14 @@ interface Values {
   birth: string;
   terms: boolean;
 }
-type Errors = Partial<Record<keyof Values, string>>;
+type Errors = Partial<Record<keyof Values | 'photo', string>>;
 
 const EMPTY: Values = { name: '', email: '', password: '', confirm: '', birth: '', terms: false };
+
+const TIPOS: { value: AccountType; titulo: string; texto: string }[] = [
+  { value: 'paciente', titulo: 'Soy paciente', texto: 'Quiero seguimiento nutricional y mi plan de comidas.' },
+  { value: 'nutricionista', titulo: 'Soy nutricionista', texto: 'Quiero acompañar a pacientes. Revisamos tu cuenta antes de activarla.' },
+];
 
 /** Indicador simple de fuerza: 0 a 4 según longitud, mayúsculas y minúsculas, números y símbolos. */
 function passwordStrength(pw: string): number {
@@ -37,8 +43,9 @@ function passwordStrength(pw: string): number {
   return checks.filter(Boolean).length;
 }
 
-function validateRegistro(v: Values): Errors {
+function validateRegistro(v: Values, foto: File | null): Errors {
   const errors: Errors = {};
+  if (!foto) errors.photo = 'Agrega una foto tuya.';
   if (v.name.trim().length < 2) errors.name = 'Escribe tu nombre completo (mínimo 2 letras).';
   if (!EMAIL_RE.test(v.email.trim())) errors.email = 'Escribe un correo válido, por ejemplo nombre@correo.com.';
   if (v.password.length < 8) errors.password = 'La contraseña debe tener al menos 8 caracteres.';
@@ -58,9 +65,14 @@ export default function RegistroPage() {
   const { refresh } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
-  const sinCupo = !settings.phase3 && settings.patients_count >= settings.patient_limit;
+  const [params] = useSearchParams();
+  const [tipo, setTipo] = useState<AccountType>(params.get('tipo') === 'nutricionista' ? 'nutricionista' : 'paciente');
+  const esNutricionista = tipo === 'nutricionista';
+  // El cupo de pacientes solo frena a pacientes: una solicitud de nutricionista siempre se puede enviar.
+  const sinCupo = !esNutricionista && !settings.phase3 && settings.patients_count >= settings.patient_limit;
   const cuposLibres = Math.max(0, settings.patient_limit - settings.patients_count);
   const [values, setValues] = useState<Values>(EMPTY);
+  const [foto, setFoto] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
   const [confirmar, setConfirmar] = useState<string | null>(null);
@@ -71,10 +83,10 @@ export default function RegistroPage() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    const found = validateRegistro(values);
+    const found = validateRegistro(values, foto);
     setErrors(found);
     setServerError(null);
-    if (Object.keys(found).length > 0) return;
+    if (Object.keys(found).length > 0 || !foto) return;
     setBusy(true);
     try {
       await repo.signUp({
@@ -82,11 +94,12 @@ export default function RegistroPage() {
         password: values.password,
         full_name: values.name.trim(),
         birth_date: values.birth,
-        // Provisional (XR2): la pantalla de registro aún no pide tipo de cuenta ni foto.
-        account_type: 'paciente',
+        account_type: tipo,
+        photo: foto,
       });
       await refresh();
-      navigate('/mi-panel', { replace: true });
+      // Nutricionista: queda pendiente de aprobación, así que va a su perfil con el aviso de revisión.
+      navigate(esNutricionista ? '/perfil' : '/mi-panel', { replace: true });
     } catch (error) {
       // La cuenta se creó pero falta confirmar el correo: es un aviso de éxito, no un error.
       if (error instanceof AppError && error.code === 'CORREO_SIN_CONFIRMAR') {
@@ -119,14 +132,62 @@ export default function RegistroPage() {
   return (
     <AuthShell title="Crear cuenta" subtitle="Guarda tus favoritos y tu ficha en un solo lugar.">
       <form onSubmit={submit} noValidate className="flex flex-col gap-5">
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.2em] text-slate-500">¿Cómo te registras?</legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {TIPOS.map((t) => {
+              const activo = tipo === t.value;
+              return (
+                <label
+                  key={t.value}
+                  className={[
+                    'flex cursor-pointer items-start gap-3 rounded-2xl border-2 p-4 transition-colors',
+                    activo ? 'border-brand-blue bg-sky-50' : 'border-slate-200 bg-white hover:border-slate-300',
+                  ].join(' ')}
+                >
+                  <input
+                    type="radio"
+                    name="tipo-cuenta"
+                    value={t.value}
+                    checked={activo}
+                    onChange={() => setTipo(t.value)}
+                    className="mt-1 h-4 w-4 shrink-0 accent-brand-blue"
+                  />
+                  <span>
+                    <span className="block font-extrabold text-navy-900">{t.titulo}</span>
+                    <span className="mt-1 block text-sm text-slate-600">{t.texto}</span>
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
+        {esNutricionista ? (
+          <p role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+            Tu cuenta de nutricionista queda en revisión. El equipo la aprueba y te avisamos.
+          </p>
+        ) : null}
         {sinCupo ? (
           <p role="alert" className="rounded-xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
             Por ahora no hay cupos para nuevos pacientes.
           </p>
         ) : null}
-        {!settings.phase3 && !sinCupo ? (
+        {!esNutricionista && !settings.phase3 && !sinCupo ? (
           <p className="text-sm font-semibold text-slate-600">Cupos disponibles: {cuposLibres}</p>
         ) : null}
+
+        <div>
+          <AvatarField
+            savedUrl={null}
+            value={foto}
+            onChange={(f) => {
+              setFoto(f);
+              setErrors((prev) => ({ ...prev, photo: undefined }));
+            }}
+            error={errors.photo ?? null}
+          />
+        </div>
         <TextField
           label="Nombre completo"
           autoComplete="name"

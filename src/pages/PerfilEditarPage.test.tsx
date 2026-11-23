@@ -8,7 +8,13 @@ import PerfilEditarPage from './PerfilEditarPage';
 
 vi.mock('../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../data', () => ({
-  repo: { listSectors: vi.fn(), updateProfile: vi.fn(), deleteMyAccount: vi.fn() },
+  repo: {
+    listSectors: vi.fn(),
+    updateProfile: vi.fn(),
+    deleteMyAccount: vi.fn(),
+    uploadAvatar: vi.fn(),
+    avatarUrl: vi.fn(async () => null),
+  },
 }));
 
 const SESSION: Session = {
@@ -24,6 +30,30 @@ beforeEach(() => {
   vi.mocked(repo.listSectors).mockResolvedValue([]);
   vi.mocked(repo.deleteMyAccount).mockReset();
   vi.mocked(repo.deleteMyAccount).mockResolvedValue(undefined);
+});
+
+describe('PerfilEditarPage · foto', () => {
+  it('cambia la foto con uploadAvatar y confirma', async () => {
+    const refresh = vi.fn(async () => {});
+    vi.mocked(useAuth).mockReturnValue({ session: SESSION, loading: false, refresh });
+    vi.mocked(repo.uploadAvatar).mockResolvedValue(SESSION.profile);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/perfil/editar']}>
+        <Routes>
+          <Route path="/perfil/editar" element={<PerfilEditarPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const guardar = await screen.findByRole('button', { name: 'Guardar foto' });
+    expect(guardar).toBeDisabled();
+    await user.upload(screen.getByLabelText(/Elegir foto/), new File(['x'], 'nueva.jpg', { type: 'image/jpeg' }));
+    expect(guardar).toBeEnabled();
+    await user.click(guardar);
+    expect(repo.uploadAvatar).toHaveBeenCalledWith(expect.any(File));
+    expect(await screen.findByText('Foto actualizada.')).toBeInTheDocument();
+    expect(refresh).toHaveBeenCalled();
+  });
 });
 
 describe('PerfilEditarPage', () => {

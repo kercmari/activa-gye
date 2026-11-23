@@ -34,18 +34,21 @@ function LocationProbe() {
   return <p>PANEL:{loc.pathname}</p>;
 }
 
-function renderPage() {
+function renderPage(url = '/registro') {
   return render(
     <AuthProvider>
-      <MemoryRouter initialEntries={['/registro']}>
+      <MemoryRouter initialEntries={[url]}>
         <Routes>
           <Route path="/registro" element={<RegistroPage />} />
           <Route path="/mi-panel" element={<LocationProbe />} />
+          <Route path="/perfil" element={<LocationProbe />} />
         </Routes>
       </MemoryRouter>
     </AuthProvider>,
   );
 }
+
+const foto = () => new File(['x'], 'yo.jpg', { type: 'image/jpeg' });
 
 async function fillBase(user: ReturnType<typeof userEvent.setup>, confirm: string) {
   await user.type(screen.getByLabelText('Nombre completo'), 'Ana Pérez');
@@ -53,6 +56,10 @@ async function fillBase(user: ReturnType<typeof userEvent.setup>, confirm: strin
   await user.type(screen.getByLabelText('Contraseña'), 'Clave-segura-1');
   await user.type(screen.getByLabelText('Confirmar contraseña'), confirm);
   fireEvent.change(screen.getByLabelText('Fecha de nacimiento'), { target: { value: '2000-05-10' } });
+}
+
+async function subirFoto(user: ReturnType<typeof userEvent.setup>) {
+  await user.upload(screen.getByLabelText(/Elegir foto/), foto());
 }
 
 describe('RegistroPage', () => {
@@ -71,30 +78,70 @@ describe('RegistroPage', () => {
     const user = userEvent.setup();
     renderPage();
     await fillBase(user, 'otra-clave-2');
+    await subirFoto(user);
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(screen.getByText('Las contraseñas no coinciden.')).toBeInTheDocument();
     expect(screen.getByText('Debes aceptar los términos y la política de privacidad para continuar.')).toBeInTheDocument();
     expect(repo.signUp).not.toHaveBeenCalled();
   });
 
-  it('registro exitoso navega a /mi-panel', async () => {
+  it('registro sin foto muestra «Agrega una foto tuya.» y no llama a signUp', async () => {
     const user = userEvent.setup();
     renderPage();
     await fillBase(user, 'Clave-segura-1');
     await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+    expect(screen.getByText('Agrega una foto tuya.')).toBeInTheDocument();
+    expect(repo.signUp).not.toHaveBeenCalled();
+  });
+
+  it('una foto que no es JPG, PNG o WebP muestra el error debajo de su campo', async () => {
+    renderPage();
+    // fireEvent: user.upload filtraría el GIF por el atributo accept y no llegaría al campo.
+    fireEvent.change(screen.getByLabelText(/Elegir foto/), { target: { files: [new File(['x'], 'nota.gif', { type: 'image/gif' })] } });
+    expect(screen.getByRole('alert')).toHaveTextContent('La foto debe ser JPG, PNG o WebP de hasta 5 MB.');
+  });
+
+  it('registro de paciente exitoso navega a /mi-panel y envía la foto y el tipo', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await fillBase(user, 'Clave-segura-1');
+    await subirFoto(user);
+    await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(await screen.findByText('PANEL:/mi-panel')).toBeInTheDocument();
     expect(repo.signUp).toHaveBeenCalledWith(
-      expect.objectContaining({ email: 'ana@correo.com', full_name: 'Ana Pérez', birth_date: '2000-05-10' }),
+      expect.objectContaining({ email: 'ana@correo.com', full_name: 'Ana Pérez', birth_date: '2000-05-10', account_type: 'paciente', photo: expect.any(File) }),
     );
   });
 
-  it('cupo lleno deshabilita Crear cuenta', async () => {
+  it('cupo lleno deshabilita Crear cuenta para pacientes', async () => {
     ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 5 };
     renderPage();
     expect(screen.getByText('Por ahora no hay cupos para nuevos pacientes.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeDisabled();
     expect(repo.signUp).not.toHaveBeenCalled();
+  });
+
+  it('?tipo=nutricionista preselecciona la opción y el cupo lleno no bloquea', async () => {
+    ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 5 };
+    renderPage('/registro?tipo=nutricionista');
+    expect(screen.getByRole('radio', { name: /Soy nutricionista/ })).toBeChecked();
+    expect(screen.getByRole('status')).toHaveTextContent('Tu cuenta de nutricionista queda en revisión.');
+    expect(screen.queryByText('Por ahora no hay cupos para nuevos pacientes.')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeEnabled();
+  });
+
+  it('nutricionista con cupo lleno envía y va a /perfil', async () => {
+    ajustes.settings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 5 };
+    const user = userEvent.setup();
+    renderPage('/registro?tipo=nutricionista');
+    await fillBase(user, 'Clave-segura-1');
+    await subirFoto(user);
+    await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+    expect(await screen.findByText('PANEL:/perfil')).toBeInTheDocument();
+    expect(repo.signUp).toHaveBeenCalledWith(expect.objectContaining({ account_type: 'nutricionista' }));
   });
 
   it('muestra los cupos disponibles cuando la fase 3 está apagada', async () => {
@@ -109,6 +156,7 @@ describe('RegistroPage', () => {
     const user = userEvent.setup();
     renderPage();
     await fillBase(user, 'Clave-segura-1');
+    await subirFoto(user);
     await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Revisa tu correo para confirmar la cuenta');
