@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
@@ -82,6 +82,26 @@ describe('Header', () => {
     const second = renderHeader();
     expect(screen.getByText('Panel nutricionista')).toBeInTheDocument();
     second.unmount();
+  });
+
+  it('menú de escritorio: Inicio, Deportes, Guía, Conócenos y Contacto, sin Nutricionista ni Buscar lugares', () => {
+    vi.mocked(usePhase).mockReturnValue(false);
+    renderHeader();
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    const enlaces = within(nav).getAllByRole('link');
+    expect(enlaces.map((a) => a.textContent)).toEqual(['Inicio', 'Deportes', 'Guía', 'Conócenos', 'Contacto']);
+    expect(enlaces.map((a) => a.getAttribute('href'))).toEqual(['/', '/deportes', '/guia', '/conocenos', '/contacto']);
+    expect(screen.queryByText('Nutricionista')).not.toBeInTheDocument();
+    expect(screen.queryByText('Buscar lugares')).not.toBeInTheDocument();
+  });
+
+  it('menú móvil: mismos enlaces que el de escritorio', async () => {
+    const user = userEvent.setup();
+    renderHeader();
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    const nav = screen.getByRole('navigation', { name: 'Menú móvil' });
+    expect(within(nav).getAllByRole('link').map((a) => a.textContent)).toEqual(['Inicio', 'Deportes', 'Guía', 'Conócenos', 'Contacto']);
+    expect(within(nav).queryByText('Nutricionista')).not.toBeInTheDocument();
   });
 
   it('el menú móvil abre y cierra', async () => {

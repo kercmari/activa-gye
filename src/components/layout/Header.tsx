@@ -9,11 +9,9 @@ import NotificationBell from '../NotificationBell';
 
 export const NAV_ITEMS = [
   { to: '/', label: 'Inicio', end: true },
-  { to: '/conocenos', label: 'Conócenos' },
-  { to: '/deportes', label: 'Explorar deportes' },
-  { to: '/lugares', label: 'Buscar lugares' },
-  { to: '/nutricion', label: 'Nutricionista' },
+  { to: '/deportes', label: 'Deportes' },
   { to: '/guia', label: 'Guía' },
+  { to: '/conocenos', label: 'Conócenos' },
   { to: '/contacto', label: 'Contacto' },
 ] as const;
 

@@ -25,7 +25,6 @@ import RegistroPage from './pages/RegistroPage';
 import RecuperarPage from './pages/RecuperarPage';
 import PerfilPage from './pages/PerfilPage';
 import PerfilEditarPage from './pages/PerfilEditarPage';
-import NutricionPage from './pages/NutricionPage';
 import MiPanelPage from './pages/panel/MiPanelPage';
 import ReportePage from './pages/panel/ReportePage';
 import NotificacionesPage from './pages/NotificacionesPage';
@@ -65,7 +64,7 @@ export function AppRoutes() {
         <Route path="lugares" element={<LugaresPage />} />
         <Route path="lugares/:id" element={<LugarPage />} />
         <Route path="comparar" element={<CompararPage />} />
-        <Route path="nutricion" element={<NutricionPage />} />
+        <Route path="nutricion" element={<Navigate to="/" replace />} />
         <Route path="guia" element={<GuiaPage />} />
 
         <Route element={<RequireGuest />}>

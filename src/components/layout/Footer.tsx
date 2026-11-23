@@ -23,7 +23,7 @@ export function Footer() {
           <ul className="mt-4 flex flex-col gap-2.5">
             <li><Link to="/deportes" className={linkClass}>Deportes</Link></li>
             <li><Link to="/lugares" className={linkClass}>Buscar lugares</Link></li>
-            <li><Link to="/nutricion" className={linkClass}>Nutricionista</Link></li>
+            <li><Link to="/" className={linkClass}>Nutrición</Link></li>
           </ul>
         </div>
 
