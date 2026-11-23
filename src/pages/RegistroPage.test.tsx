@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { repo, type Session } from '../data';
+import { AppError } from '../data/types';
 import { AuthProvider } from '../auth/AuthContext';
 import RegistroPage from './RegistroPage';
 
@@ -101,5 +102,17 @@ describe('RegistroPage', () => {
     renderPage();
     expect(screen.getByText('Cupos disponibles: 3')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Crear cuenta' })).toBeEnabled();
+  });
+
+  it('CORREO_SIN_CONFIRMAR muestra el aviso con role status y el enlace a ingresar', async () => {
+    vi.mocked(repo.signUp).mockRejectedValue(new AppError('CORREO_SIN_CONFIRMAR', 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.'));
+    const user = userEvent.setup();
+    renderPage();
+    await fillBase(user, 'Clave-segura-1');
+    await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Revisa tu correo para confirmar la cuenta');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/ingresar');
   });
 });

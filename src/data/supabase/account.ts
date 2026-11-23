@@ -161,7 +161,12 @@ export const accountPart: Partial<Repo> = {
 
   async signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-    if (error) throw toAppError(error);
+    if (error) {
+      if (/email not confirmed/i.test(error.message)) {
+        throw new AppError('CORREO_SIN_CONFIRMAR', 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.');
+      }
+      throw toAppError(error);
+    }
     if (!data.user) throw new AppError('CREDENCIALES', 'Correo o contraseña incorrectos.');
     return loadSession(data.user);
   },

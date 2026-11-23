@@ -9,6 +9,7 @@ import { ageFrom, todayISO } from '../components/profile/labels';
 import { buttonClasses } from '../components/ui/Button';
 import { TextField } from '../components/ui/Field';
 import { errorMessage } from '../components/ui/States';
+import { AppError } from '../data/types';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const STRENGTH = ['Muy débil', 'Débil', 'Aceptable', 'Buena', 'Fuerte'];
@@ -62,9 +63,10 @@ export default function RegistroPage() {
   const [values, setValues] = useState<Values>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
+  const [confirmar, setConfirmar] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const set = <K extends keyof Values>(key: K, value: Values[K]) =>
+  const set =<K extends keyof Values>(key: K, value: Values[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
 
   const submit = async (e: FormEvent) => {
@@ -84,12 +86,33 @@ export default function RegistroPage() {
       await refresh();
       navigate('/mi-panel', { replace: true });
     } catch (error) {
-      setServerError(errorMessage(error));
+      // La cuenta se creó pero falta confirmar el correo: es un aviso de éxito, no un error.
+      if (error instanceof AppError && error.code === 'CORREO_SIN_CONFIRMAR') {
+        setConfirmar(errorMessage(error));
+      } else {
+        setServerError(errorMessage(error));
+      }
       setBusy(false);
     }
   };
 
   const strength = passwordStrength(values.password);
+
+  if (confirmar) {
+    return (
+      <AuthShell title="Revisa tu correo" subtitle="Tu cuenta ya está creada.">
+        <div role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
+          {confirmar}
+        </div>
+        <Link
+          to="/ingresar"
+          className={buttonClasses({ variant: 'primary', size: 'lg' }, 'mt-6 w-full')}
+        >
+          Ir a ingresar
+        </Link>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title="Crear cuenta" subtitle="Guarda tus favoritos y tu ficha en un solo lugar.">

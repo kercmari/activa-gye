@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { repo, type Session } from '../data';
 import { AppError } from '../data/types';
 import { useAuth } from '../auth/AuthContext';
-import IngresarPage from './IngresarPage';
+import IngresarPage, { esBaseLocal } from './IngresarPage';
 
 vi.mock('../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../data', () => ({
@@ -40,7 +40,44 @@ async function fillAndSubmit(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Ingresar' }));
 }
 
+describe('esBaseLocal', () => {
+  it('es base local sin URL o con host local', () => {
+    expect(esBaseLocal(undefined)).toBe(true);
+    expect(esBaseLocal('http://127.0.0.1:54321')).toBe(true);
+    expect(esBaseLocal('http://localhost:54321')).toBe(true);
+  });
+
+  it('no es base local con la URL de la nube', () => {
+    expect(esBaseLocal('https://abc.supabase.co')).toBe(false);
+  });
+});
+
 describe('IngresarPage', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('muestra las cuentas de prueba en la base local', () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'http://127.0.0.1:54321');
+    renderAt('/ingresar');
+    expect(screen.getByText('Cuentas de prueba')).toBeInTheDocument();
+  });
+
+  it('no muestra las cuentas de prueba con la URL de la nube', () => {
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://abc.supabase.co');
+    renderAt('/ingresar');
+    expect(screen.queryByText('Cuentas de prueba')).not.toBeInTheDocument();
+  });
+
+  it('CORREO_SIN_CONFIRMAR se muestra como aviso, no como error', async () => {
+    vi.mocked(repo.signIn).mockRejectedValue(new AppError('CORREO_SIN_CONFIRMAR', 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.'));
+    const user = userEvent.setup();
+    renderAt('/ingresar');
+    await fillAndSubmit(user);
+    expect(await screen.findByRole('status')).toHaveTextContent('Revisa tu correo para confirmar la cuenta');
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   beforeEach(() => {
     vi.mocked(useAuth).mockReturnValue({ session: null, loading: false, refresh: vi.fn(async () => {}) });
     vi.mocked(repo.signIn).mockReset();
