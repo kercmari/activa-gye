@@ -13,6 +13,10 @@ main() {
   mkdir -p "$MAIN/work/out" "$MAIN/work/blocks" "$WT"
   cd "$MAIN" || exit 2
   exec 8>"$MAIN/work/out/.front.lock"; flock -n 8 || { echo "ya está corriendo"; exit 4; }
+  # Va en cola: espera a que terminen las cadenas de la otra sesión sobre el mismo main.
+  say 'espero a precios-fase3.sh y registro.sh'
+  exec 6>"$MAIN/work/out/.precios-fase3.lock"; flock 6
+  exec 7>"$MAIN/work/out/.registro.lock"; flock 7
 
   say 'INICIO front (ronda 6)'
   plan_en_main || exit 3
