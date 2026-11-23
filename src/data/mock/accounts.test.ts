@@ -16,18 +16,30 @@ vi.mock('./catalog', () => {
   };
 });
 
-vi.mock('../../lib/image', () => ({
-  downscaleToDataUrl: async () => 'data:image/jpeg;base64,FOTO',
-}));
+vi.mock('../../lib/image', async () => {
+  const { AppError: Err } = await import('../types');
+  return {
+    downscaleToDataUrl: async (file: File) => {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        throw new Err('FOTO_INVALIDA', 'La foto debe ser JPG, PNG o WebP de hasta 5 MB.');
+      }
+      return `data:image/jpeg;base64,FOTO-${file.name}`;
+    },
+  };
+});
 
 const repo = accountsPart as Repo;
 const PLACE_IDS = ['p1', 'p2'];
+
+const foto = (tipo = 'image/jpeg') => new File(['x'], 'foto.jpg', { type: tipo });
 
 const signUpInput = (email = 'ana@example.com') => ({
   email,
   password: 'clave-segura-1',
   full_name: 'Ana Pérez',
   birth_date: '1995-03-15',
+  account_type: 'paciente' as const,
+  photo: foto(),
 });
 
 async function expectCode(promise: Promise<unknown>, code: string): Promise<void> {
@@ -149,3 +161,69 @@ describe('revisión R1/R2: datos y cuenta', () => {
     expect(nutri.profile.full_name).not.toMatch(/demo/i);
   });
 });
+
+describe('registro con tipo de cuenta y foto', () => {
+  it('sin foto → FOTO_REQUERIDA y no crea la cuenta', async () => {
+    await expectCode(repo.signUp({ ...signUpInput(), photo: undefined }), 'FOTO_REQUERIDA');
+    await expectCode(repo.signIn('ana@example.com', 'clave-segura-1'), 'CREDENCIALES');
+  });
+
+  it('foto de tipo inválido → FOTO_INVALIDA y no crea la cuenta', async () => {
+    await expectCode(repo.signUp({ ...signUpInput(), photo: foto('image/gif') }), 'FOTO_INVALIDA');
+    await expectCode(repo.signIn('ana@example.com', 'clave-segura-1'), 'CREDENCIALES');
+  });
+
+  it('nutricionista queda pendiente y con rol usuario hasta que el admin aprueba', async () => {
+    const session = await repo.signUp({ ...signUpInput('nutri-nueva@example.com'), account_type: 'nutricionista' });
+    expect(session.profile.role).toBe('usuario');
+    expect(session.profile.requested_role).toBe('nutricionista');
+    expect(session.profile.nutri_status).toBe('pendiente');
+    expect(session.profile.avatar_path).toBe(`${session.user.id}/avatar.jpg`);
+  });
+
+  it('paciente no lleva solicitud de nutricionista', async () => {
+    const session = await repo.signUp(signUpInput());
+    expect(session.profile.requested_role).toBeFalsy();
+    expect(session.profile.nutri_status).toBeFalsy();
+  });
+
+  it('uploadAvatar reemplaza la foto; avatarUrl(null) → null', async () => {
+    await repo.signUp(signUpInput());
+    const perfil = await repo.uploadAvatar(new File(['y'], 'nueva.png', { type: 'image/png' }));
+    expect(perfil.avatar_path).toMatch(/\/avatar\.jpg$/);
+    expect(await repo.avatarUrl(perfil.avatar_path ?? null)).toBe('data:image/jpeg;base64,FOTO-nueva.png');
+    expect(await repo.avatarUrl(null)).toBeNull();
+    const fotos = JSON.parse(localStorage.getItem('activa-gye:v1:photos') ?? '[]') as { path: string }[];
+    expect(fotos.filter((f) => f.path === perfil.avatar_path)).toHaveLength(1);
+  });
+
+  it('admin aprueba una solicitud: cambia rol y estado; sin solicitud → SIN_SOLICITUD', async () => {
+    const nueva = await repo.signUp({ ...signUpInput('nutri-ok@example.com'), account_type: 'nutricionista' });
+    await repo.signOut();
+    await repo.signIn('admin@activagye.test', 'ActivaAdmin2026!');
+    const lista = await repo.adminListUsers();
+    expect(lista[0].id).toBe(nueva.user.id); // pendientes primero
+    expect(lista[0].nutri_status).toBe('pendiente');
+    await repo.adminReviewNutri(nueva.user.id, true);
+    const despues = (await repo.adminListUsers()).find((u) => u.id === nueva.user.id);
+    expect(despues?.role).toBe('nutricionista');
+    expect(despues?.nutri_status).toBe('aprobado');
+    await expectCode(repo.adminReviewNutri(nueva.user.id, false), 'SIN_SOLICITUD');
+  });
+
+  it('admin rechaza: sigue usuario con estado rechazado', async () => {
+    const nueva = await repo.signUp({ ...signUpInput('nutri-no@example.com'), account_type: 'nutricionista' });
+    await repo.signOut();
+    await repo.signIn('admin@activagye.test', 'ActivaAdmin2026!');
+    await repo.adminReviewNutri(nueva.user.id, false);
+    const despues = (await repo.adminListUsers()).find((u) => u.id === nueva.user.id);
+    expect(despues?.role).toBe('usuario');
+    expect(despues?.nutri_status).toBe('rechazado');
+  });
+
+  it('adminReviewNutri sin ser admin → SOLO_ADMIN', async () => {
+    const nueva = await repo.signUp({ ...signUpInput('nutri-x@example.com'), account_type: 'nutricionista' });
+    await expectCode(repo.adminReviewNutri(nueva.user.id, true), 'SOLO_ADMIN');
+  });
+});
+

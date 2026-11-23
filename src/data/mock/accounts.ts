@@ -4,10 +4,11 @@
  * Tablas en localStorage: users, favorites, progress_entries, photos.
  */
 import type {
-  AdminUser, Place, Profile, ProfilePatch, ProgressEntry,
+  AdminUser, NutriStatus, Place, Profile, ProfilePatch, ProgressEntry,
   ProgressInput, Repo, Role, Session, SignUpInput, Goal, ActivityLevel, Sex,
 } from '../types';
 import { AppError } from '../types';
+import { downscaleToDataUrl } from '../../lib/image';
 import { catalogPart } from './catalog';
 import { ensureSeedUsers } from './seed-users';
 import {
@@ -105,6 +106,19 @@ function onAuthChange(cb: (session: Session | null) => void): () => void {
   };
 }
 
+/** Tipo de cuenta válido o DATOS_INVALIDOS. */
+function validateAccountType(tipo: SignUpInput['account_type']): void {
+  if (tipo !== 'paciente' && tipo !== 'nutricionista') throw invalid();
+}
+
+/** Guarda la foto (data URL) de `userId` en la tabla de fotos, reemplazando la anterior. */
+function guardarFoto(userId: string, dataUrl: string): string {
+  const path = `${userId}/avatar.jpg`;
+  const fotos = readTable<PhotoRow>('photos').filter((p) => p.path !== path);
+  writeTable('photos', [...fotos, { path, user_id: userId, data_url: dataUrl }]);
+  return path;
+}
+
 async function signUp(input: SignUpInput): Promise<Session> {
   await ensureSeedUsers();
   await wait();
@@ -114,6 +128,10 @@ async function signUp(input: SignUpInput): Promise<Session> {
   const full_name = validateFullName(input.full_name);
   if (!isRealDate(input.birth_date)) throw invalid('Escribe una fecha de nacimiento válida.');
   validateBirth(input.birth_date);
+  validateAccountType(input.account_type);
+  // La foto se valida antes de crear la cuenta: si falla, no queda nada a medias.
+  if (!input.photo) throw new AppError('FOTO_REQUERIDA', 'Agrega una foto tuya.');
+  const foto = await downscaleToDataUrl(input.photo, 512);
 
   const users = readTable<StoredUser>('users');
   if (users.some((u) => u.email === email)) {
@@ -122,6 +140,7 @@ async function signUp(input: SignUpInput): Promise<Session> {
 
   const id = crypto.randomUUID();
   const now = nowIso();
+  const esNutri = input.account_type === 'nutricionista';
   const user: StoredUser = {
     id,
     email,
@@ -129,6 +148,9 @@ async function signUp(input: SignUpInput): Promise<Session> {
     profile: {
       id, full_name, birth_date: input.birth_date, sex: null, phone: null, sector_id: null,
       goal: null, activity_level: null, role: 'usuario', created_at: now, updated_at: now,
+      avatar_path: guardarFoto(id, foto),
+      requested_role: esNutri ? 'nutricionista' : null,
+      nutri_status: esNutri ? 'pendiente' : null,
     },
   };
   writeTable('users', [...readTable<StoredUser>('users'), user]);
@@ -204,6 +226,28 @@ async function updateProfile(patch: ProfilePatch): Promise<Profile> {
   writeTable('users', users);
   notifyAuth();
   return updated.profile;
+}
+
+async function uploadAvatar(file: File): Promise<Profile> {
+  await ensureSeedUsers();
+  await wait();
+  const me = requireUser();
+  const foto = await downscaleToDataUrl(file, 512);
+  const path = guardarFoto(me.id, foto);
+  const users = readTable<StoredUser>('users');
+  const idx = users.findIndex((u) => u.id === me.id);
+  if (idx < 0) throw new AppError('SIN_SESION', 'Inicia sesión para continuar.');
+  users[idx] = { ...users[idx], profile: { ...users[idx].profile, avatar_path: path, updated_at: nowIso() } };
+  writeTable('users', users);
+  notifyAuth();
+  return users[idx].profile;
+}
+
+async function avatarUrl(path: string | null): Promise<string | null> {
+  await wait();
+  if (!path) return null;
+  const foto = readTable<PhotoRow>('photos').find((p) => p.path === path);
+  return foto?.data_url ?? null;
 }
 
 async function deleteMyAccount(): Promise<void> {
@@ -320,9 +364,44 @@ async function adminListUsers(search?: string): Promise<AdminUser[]> {
   requireAdmin();
   const q = search?.trim().toLowerCase() ?? '';
   return readTable<StoredUser>('users')
-    .map((u) => ({ id: u.id, email: u.email, full_name: u.profile.full_name, role: u.profile.role, created_at: u.profile.created_at }))
+    .map((u) => ({
+      id: u.id,
+      email: u.email,
+      full_name: u.profile.full_name,
+      role: u.profile.role,
+      created_at: u.profile.created_at,
+      requested_role: u.profile.requested_role ?? null,
+      nutri_status: u.profile.nutri_status ?? null,
+      avatar_path: u.profile.avatar_path ?? null,
+    }))
     .filter((u) => !q || u.email.includes(q) || u.full_name.toLowerCase().includes(q))
-    .sort((a, b) => a.email.localeCompare(b.email));
+    // Pendientes primero, luego por correo.
+    .sort((a, b) => {
+      const pa = a.nutri_status === 'pendiente' ? 0 : 1;
+      const pb = b.nutri_status === 'pendiente' ? 0 : 1;
+      return pa !== pb ? pa - pb : a.email.localeCompare(b.email);
+    });
+}
+
+async function adminReviewNutri(userId: string, approve: boolean): Promise<void> {
+  await wait();
+  requireAdmin();
+  const users = readTable<StoredUser>('users');
+  const idx = users.findIndex((u) => u.id === userId);
+  if (idx < 0) throw new AppError('NO_EXISTE', 'No encontramos esa cuenta.');
+  const actual = users[idx].profile;
+  if (actual.nutri_status !== 'pendiente') throw new AppError('SIN_SOLICITUD', 'Esta persona no tiene una solicitud pendiente.');
+  const estado: NutriStatus = approve ? 'aprobado' : 'rechazado';
+  users[idx] = {
+    ...users[idx],
+    profile: {
+      ...actual,
+      role: approve ? 'nutricionista' : actual.role,
+      nutri_status: estado,
+      updated_at: nowIso(),
+    },
+  };
+  writeTable('users', users);
 }
 
 async function adminSetRole(userId: string, role: Role): Promise<void> {
@@ -346,6 +425,8 @@ export const accountsPart: Partial<Repo> = {
   requestPasswordReset,
   updateProfile,
   deleteMyAccount,
+  uploadAvatar,
+  avatarUrl,
   listFavorites,
   isFavorite,
   toggleFavorite,
@@ -354,4 +435,5 @@ export const accountsPart: Partial<Repo> = {
   deleteProgress,
   adminListUsers,
   adminSetRole,
+  adminReviewNutri,
 };

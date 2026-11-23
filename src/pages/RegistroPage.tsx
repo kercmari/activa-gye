@@ -82,6 +82,8 @@ export default function RegistroPage() {
         password: values.password,
         full_name: values.name.trim(),
         birth_date: values.birth,
+        // Provisional (XR2): la pantalla de registro aún no pide tipo de cuenta ni foto.
+        account_type: 'paciente',
       });
       await refresh();
       navigate('/mi-panel', { replace: true });
