@@ -42,10 +42,10 @@ export default function DeportesPage() {
   return (
     <>
       {/* a. Portada */}
-      <section className="relative overflow-hidden bg-navy-900 text-white">
+      <section className="relative overflow-hidden bg-navy-900 text-white md:flex md:min-h-[calc(100svh-4.25rem)] md:items-center">
         <img src="/img/hero.jpg" alt="" className="absolute inset-y-0 right-0 h-full w-full object-cover object-[70%_center] opacity-40 md:w-3/5 md:opacity-100" />
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900 via-navy-900/80 to-navy-900/10 md:via-navy-900/60" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-44 pt-14 md:pb-48 md:pt-24">
+        <div className="relative mx-auto w-full max-w-6xl px-4 pb-44 pt-14 md:pb-48 md:pt-24">
           <p className="inline-flex items-center gap-2 rounded-full border border-brand-blue/40 bg-brand-blue/10 px-4 py-2 text-xs font-extrabold uppercase tracking-[0.2em] text-sky-300">
             <MapPin className="h-4 w-4" aria-hidden="true" />
             Tu guía deportiva en Guayaquil

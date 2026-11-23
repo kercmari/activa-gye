@@ -22,10 +22,10 @@ export default function HomePage() {
   return (
     <>
       {/* a. Portada con foto */}
-      <section className="relative overflow-hidden bg-navy-900 text-white">
+      <section className="relative overflow-hidden bg-navy-900 text-white flex min-h-[calc(100svh-4.25rem)] items-center">
         <img src="/img/hero.jpg" alt="" className="absolute inset-y-0 right-0 h-full w-full object-cover object-[70%_center] opacity-40 md:w-3/5 md:opacity-100" />
         <div className="absolute inset-0 bg-gradient-to-r from-navy-900 via-navy-900/80 to-navy-900/10 md:via-navy-900/60" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-14 md:pb-28 md:pt-24">
+        <div className="relative mx-auto w-full max-w-6xl px-4 pb-20 pt-14 md:pb-28 md:pt-24">
           <p className="eyebrow !text-brand-blue">Nutrición</p>
           <h1 className="display mt-3 max-w-3xl break-words text-4xl text-white sm:text-5xl md:text-7xl">Acompañamiento nutricional</h1>
           <p className="mt-6 max-w-xl text-lg text-slate-300">
