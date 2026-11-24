@@ -30,7 +30,7 @@ export default function GuiaPage() {
     <>
       <PageHeader
         eyebrow="Guía"
-        title="Guía de nutrición Activa GYE"
+        title="Guía de nutrición VITGO"
         subtitle="Consejos prácticos para comer mejor cada día: qué sí y qué evitar, y cómo hacerlo paso a paso."
         back="/"
       >

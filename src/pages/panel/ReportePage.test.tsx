@@ -61,7 +61,7 @@ describe('ReportePage', () => {
     const printSpy = vi.spyOn(window, 'print').mockImplementation(() => {});
     renderPage();
 
-    expect(await screen.findByRole('heading', { name: 'Reporte de progreso — Activa GYE' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Reporte de progreso — VITGO' })).toBeInTheDocument();
     expect(screen.getByText('Ana Pérez')).toBeInTheDocument();
     expect(screen.getByText(/^72[.,]0 kg$/)).toBeInTheDocument();
     expect(screen.getByText('170 cm')).toBeInTheDocument();

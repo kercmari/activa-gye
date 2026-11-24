@@ -106,10 +106,10 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 bg-navy-900 text-white shadow-lg shadow-navy-900/10">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4">
-        <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-3" aria-label="Activa GYE, ir al inicio">
+        <Link to="/" className="flex shrink-0 items-center gap-2 sm:gap-3" aria-label="VITGO, ir al inicio">
           <img src="/img/logo.png" alt="" className="h-11 w-auto shrink-0" />
           <span className="whitespace-nowrap text-lg font-extrabold italic tracking-tight sm:text-xl">
-            ACTIVA <span className="text-brand-orange">GYE</span>
+            VIT<span className="text-brand-orange">GO</span>
           </span>
         </Link>
 

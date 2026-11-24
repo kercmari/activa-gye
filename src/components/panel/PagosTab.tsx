@@ -85,7 +85,7 @@ function PagosContent({ userId }: { userId: string }) {
 
 function InvoiceRow({ invoice, onReported }: { invoice: Invoice; onReported: (inv: Invoice) => void }) {
   const badge = STATUS[invoice.status];
-  const payee = invoice.payee_name ?? (invoice.payee_id ? 'Tu nutricionista' : 'Activa GYE');
+  const payee = invoice.payee_name ?? (invoice.payee_id ? 'Tu nutricionista' : 'VITGO');
 
   return (
     <li className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">

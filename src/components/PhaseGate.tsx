@@ -13,7 +13,7 @@ type Props = { phase: 1 | 2 | 3; title?: string; text?: string; compact?: boolea
 export default function PhaseGate({ phase, title, text, compact, back, children }: Props) {
   const on = usePhase(phase);
   if (on) return <>{children}</>;
-  const msg = text ?? 'Esta sección se habilitará en la siguiente etapa de Activa GYE.';
+  const msg = text ?? 'Esta sección se habilitará en la siguiente etapa de VITGO.';
   if (compact) {
     return (
       <div className="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600" data-testid={`fase-${phase}-bloqueada`}>

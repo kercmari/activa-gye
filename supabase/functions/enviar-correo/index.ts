@@ -27,18 +27,18 @@ const absoluteLink = (link: string | null, siteUrl: string) => {
 const renderHtml = (title: string, body: string | null, link: string | null, siteUrl: string) => {
   const logo = `${siteUrl.replace(/\/+$/, '')}/img/logo.png`;
   const button = link
-    ? `<p style="margin:28px 0 0"><a href="${escapeHtml(link)}" style="display:inline-block;background:#f26b1d;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px">Ver en Activa GYE</a></p>`
+    ? `<p style="margin:28px 0 0"><a href="${escapeHtml(link)}" style="display:inline-block;background:#f26b1d;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px">Ver en VITGO</a></p>`
     : '';
   return `<!doctype html>
 <html lang="es"><body style="margin:0;background:#f4f6fa;font-family:Arial,Helvetica,sans-serif;color:#1b2a4a">
 <div style="max-width:560px;margin:0 auto;padding:24px">
   <div style="background:#ffffff;border-radius:20px;padding:28px">
-    <img src="${escapeHtml(logo)}" alt="Activa GYE" height="44" style="display:block;height:44px;width:auto">
+    <img src="${escapeHtml(logo)}" alt="VITGO" height="44" style="display:block;height:44px;width:auto">
     <h1 style="font-size:20px;margin:24px 0 8px">${escapeHtml(title)}</h1>
     ${body ? `<p style="font-size:15px;line-height:1.6;margin:0">${escapeHtml(body)}</p>` : ''}
     ${button}
   </div>
-  <p style="font-size:12px;color:#6b7a94;text-align:center;margin:16px 0 0">Recibiste este correo porque tienes una cuenta en Activa GYE.</p>
+  <p style="font-size:12px;color:#6b7a94;text-align:center;margin:16px 0 0">Recibiste este correo porque tienes una cuenta en VITGO.</p>
 </div>
 </body></html>`;
 };
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
   const siteUrl = Deno.env.get('SITE_URL') ?? '';
   const link = rawLink ? absoluteLink(rawLink, siteUrl) : null;
   const senderEmail = Deno.env.get('BREVO_SENDER_EMAIL') ?? '';
-  const senderName = Deno.env.get('BREVO_SENDER_NAME') ?? 'Activa GYE';
+  const senderName = Deno.env.get('BREVO_SENDER_NAME') ?? 'VITGO';
   if (!senderEmail) return json({ sent: false, reason: 'sin_remitente' });
 
   const brevo = await fetch(BREVO_URL, {

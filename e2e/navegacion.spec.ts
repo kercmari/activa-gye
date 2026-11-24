@@ -167,11 +167,11 @@ test('con la fase 1 sola, el menú de cuenta no muestra Mi panel, Notificaciones
   });
 });
 
-test('a 1280 px el logo se ve completo: «ACTIVA GYE» sin cortar', async ({ page }, testInfo) => {
+test('a 1280 px el logo se ve completo: «VITGO» sin cortar', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'el logo a 1280 px se revisa en escritorio');
   await page.goto('/');
-  const texto = page.getByRole('link', { name: 'Activa GYE, ir al inicio' }).locator('span').first();
+  const texto = page.getByRole('link', { name: 'VITGO, ir al inicio' }).locator('span').first();
   await expect(texto).toBeVisible();
-  const sinCortar = await texto.evaluate((el) => el.scrollWidth <= el.clientWidth && el.textContent?.replace(/\s+/g, ' ').trim() === 'ACTIVA GYE');
+  const sinCortar = await texto.evaluate((el) => el.scrollWidth <= el.clientWidth && el.textContent?.replace(/\s+/g, ' ').trim() === 'VITGO');
   expect(sinCortar).toBe(true);
 });

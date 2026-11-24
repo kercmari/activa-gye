@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Colores y letras de Activa GYE (tomados de las capturas en docs/diseno/capturas). Usar estas clases, no colores sueltos:
+/* Colores y letras de VITGO (tomados de las capturas en docs/diseno/capturas). Usar estas clases, no colores sueltos:
    bg-navy-900 / text-navy-900 (azul marino), bg-brand-orange (naranja), bg-brand-blue (azul botón), bg-surface (fondo claro). */
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;

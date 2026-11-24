@@ -72,7 +72,7 @@ describe('Header', () => {
 
   it('el logo se ve completo: el texto no se corta', () => {
     renderHeader();
-    const texto = screen.getByText('GYE', { exact: false }).parentElement;
+    const texto = screen.getByText('GO', { exact: true }).parentElement;
     expect(texto?.className).toContain('whitespace-nowrap');
     expect(texto?.className).not.toContain('truncate');
   });

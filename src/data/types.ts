@@ -1,5 +1,5 @@
 /**
- * CONTRATO DE DATOS de Activa GYE.
+ * CONTRATO DE DATOS de VITGO.
  * Las formas copian las tablas de supabase/migrations/20261121000001_esquema_inicial.sql.
  * Datos reales: Supabase (src/data/supabase). Pruebas / sin base: simulador (src/data/mock).
  * Dueño: orquestador. Plan: docs/superpowers/plans/2026-11-21-activa-gye-backend-fases.md

@@ -29,7 +29,7 @@ export default function HomePage() {
           <p className="eyebrow !text-brand-blue">Nutrición</p>
           <h1 className="display mt-3 max-w-3xl break-words text-4xl text-white sm:text-5xl md:text-7xl">Acompañamiento nutricional</h1>
           <p className="mt-6 max-w-xl text-lg text-slate-300">
-            Activa GYE conecta pacientes con nutricionistas. Recibe comidas y rutinas según tu peso, edad y objetivo.
+            VITGO conecta pacientes con nutricionistas. Recibe comidas y rutinas según tu peso, edad y objetivo.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             {session ? (
@@ -89,7 +89,7 @@ export default function HomePage() {
         </div>
 
         <p role="note" className="mt-10 rounded-2xl bg-slate-100 px-5 py-4 text-sm font-semibold text-slate-600">
-          Activa GYE conecta pacientes con nutricionistas. No da diagnósticos ni consejos automáticos.
+          VITGO conecta pacientes con nutricionistas. No da diagnósticos ni consejos automáticos.
         </p>
       </section>
     </>

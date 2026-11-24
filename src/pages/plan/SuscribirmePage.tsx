@@ -132,7 +132,7 @@ function Suscripcion({ datos, onRetry }: { datos: Datos; onRetry: () => void }) 
         <EmptyState
           title="Tu suscripción está pendiente"
           text="No encontramos la factura de tu suscripción. Escríbenos para revisarla."
-          action={{ to: '/contacto', label: 'Escribir a Activa GYE' }}
+          action={{ to: '/contacto', label: 'Escribir a VITGO' }}
         />
       ) : (
         <PlanesPaciente planes={planes} onFactura={setFactura} onRetry={onRetry} />
@@ -270,7 +270,7 @@ function PagoFactura({ invoice, onCambio }: { invoice: Invoice; onCambio: (inv: 
 
       {invoice.status === 'reportada' ? (
         <p className="mt-4 text-sm text-slate-600">
-          Comprobante informado: <span className="font-bold">{invoice.payment_reference}</span>. Lo revisará Activa GYE.
+          Comprobante informado: <span className="font-bold">{invoice.payment_reference}</span>. Lo revisará VITGO.
         </p>
       ) : null}
 

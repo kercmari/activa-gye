@@ -15,7 +15,7 @@ export default function ConocenosPage() {
       <PageHeader
         eyebrow="Conócenos"
         title="Hacemos fácil empezar a moverte"
-        subtitle="Activa GYE reúne en un solo lugar los sitios donde practicar deporte en Guayaquil."
+        subtitle="VITGO reúne en un solo lugar los sitios donde practicar deporte en Guayaquil."
       />
 
       <div className="mx-auto max-w-6xl space-y-16 px-4 py-16">

@@ -80,9 +80,9 @@ function Reporte() {
       {actions}
       <article className="print-card mx-auto max-w-3xl rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:p-10">
         <header className="flex items-center gap-4 border-b border-slate-200 pb-6">
-          <img src="/img/logo-512.png" alt="Activa GYE" className="h-14 w-14 object-contain" />
+          <img src="/img/logo-512.png" alt="VITGO" className="h-14 w-14 object-contain" />
           <div>
-            <h1 className="display text-2xl text-navy-900 md:text-3xl">Reporte de progreso — Activa GYE</h1>
+            <h1 className="display text-2xl text-navy-900 md:text-3xl">Reporte de progreso — VITGO</h1>
             <p className="mt-1 text-sm text-slate-600">Fecha: {formatDateLong(todayISO())}</p>
           </div>
         </header>
