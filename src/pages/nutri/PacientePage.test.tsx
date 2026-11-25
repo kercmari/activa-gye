@@ -206,6 +206,6 @@ describe('PacientePage', () => {
     renderPage('/nutri/pacientes/u1?tab=recetas');
 
     expect(await screen.findByText('Sin recetas')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Nueva receta' })).not.toHaveLength(0);
+    expect(screen.getAllByRole('button', { name: 'Nueva receta' })).toHaveLength(1);
   });
 });

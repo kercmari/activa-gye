@@ -275,8 +275,7 @@ function RecetasSection({ patientId, origin, onChanged }: { patientId: string; o
     list = (
       <EmptyState
         title="Sin recetas"
-        text="Crea la primera receta de este paciente: una dieta, una rutina o una recomendación."
-        action={{ label: 'Nueva receta', onClick: () => setEditing('nueva') }}
+        text="Crea la primera receta de este paciente con el botón «Nueva receta» de arriba: una dieta, una rutina o una recomendación."
       />
     );
   } else {

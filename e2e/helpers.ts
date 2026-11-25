@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { mkdirSync, rmSync } from 'node:fs';
+import { mkdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -171,8 +171,13 @@ export async function conCandadoDeFases<T>(fn: () => Promise<T>): Promise<T> {
       mkdirSync(CANDADO);
       break;
     } catch {
-      // Candado de un proceso que murió hace más de 10 min: se libera.
-      if (Date.now() - inicio > 600_000) rmSync(CANDADO, { recursive: true, force: true });
+      // Candado huérfano: la carpeta tiene más de 10 min de antigüedad (su dueño murió).
+      // Un candado joven se sigue esperando, aunque este proceso lleve mucho esperando.
+      try {
+        if (Date.now() - statSync(CANDADO).mtimeMs > 600_000) rmSync(CANDADO, { recursive: true, force: true });
+      } catch {
+        // El candado ya lo soltó su dueño entre el mkdir y el stat: se reintenta.
+      }
       await new Promise((r) => setTimeout(r, 500));
     }
   }
