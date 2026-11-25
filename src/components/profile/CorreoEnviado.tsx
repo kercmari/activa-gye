@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { repo } from '../../data';
 import { errorMessage } from '../ui/States';
+import { AppError } from '../../data/types';
 
 interface Props {
   /** Correo al que se mandó el enlace. */
@@ -33,6 +34,7 @@ export default function CorreoEnviado({ email, que, reenviar = false }: Props) {
     } catch (err) {
       setError(errorMessage(err));
       setEstado('listo');
+      if (err instanceof AppError && err.code === 'ESPERA_CORREO') setEspera(60);
     }
   };
 
