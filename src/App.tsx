@@ -43,6 +43,8 @@ import AdminUsuariosPage from './pages/admin/AdminUsuariosPage';
 import AdminPlantillasPage from './pages/admin/AdminPlantillasPage';
 import AdminPlantillaPage from './pages/admin/AdminPlantillaPage';
 import AdminGuiaPage from './pages/admin/AdminGuiaPage';
+import AdminSuscripcionesPage from './pages/admin/AdminSuscripcionesPage';
+import AdminPlanesPage from './pages/admin/AdminPlanesPage';
 import GuiaPage from './pages/GuiaPage';
 import PlanShell from './components/plan/PlanShell';
 import HoyPage from './pages/plan/HoyPage';
@@ -102,6 +104,8 @@ export function AppRoutes() {
           <Route path="admin/fases" element={<AdminFasesPage />} />
           <Route path="admin/datos-lugares" element={<AdminDatosLugaresPage />} />
           <Route path="admin/pagos" element={<AdminPagosPage />} />
+          <Route path="admin/suscripciones" element={<AdminSuscripcionesPage />} />
+          <Route path="admin/planes" element={<AdminPlanesPage />} />
           <Route path="admin/lugares" element={<AdminLugaresPage />} />
           <Route path="admin/lugares/nuevo" element={<AdminLugarPage />} />
           <Route path="admin/lugares/:id" element={<AdminLugarPage />} />

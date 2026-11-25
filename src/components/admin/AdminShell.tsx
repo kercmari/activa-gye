@@ -2,8 +2,9 @@ import type { ReactNode } from 'react';
 import { Link, NavLink } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
 import { usePhase } from '../../auth/SettingsContext';
+import { usePendingCount } from './usePendingCount';
 
-const ITEMS: { to: string; label: string; end: boolean; adminOnly: boolean; phase?: 2 | 3 }[] = [
+const ITEMS: { to: string; label: string; end: boolean; adminOnly: boolean; phase?: 2 | 3; pendientes?: boolean }[] = [
   { to: '/admin', label: 'Resumen', end: true, adminOnly: true },
   { to: '/nutri', label: 'Panel nutricionista', end: false, adminOnly: false, phase: 2 },
   { to: '/admin/plantillas', label: 'Plantillas', end: false, adminOnly: false },
@@ -11,7 +12,8 @@ const ITEMS: { to: string; label: string; end: boolean; adminOnly: boolean; phas
   { to: '/admin/fases', label: 'Fases', end: false, adminOnly: true },
   { to: '/admin/lugares', label: 'Lugares', end: false, adminOnly: true },
   { to: '/admin/datos-lugares', label: 'Datos de lugares', end: false, adminOnly: true, phase: 3 },
-  { to: '/admin/pagos', label: 'Pagos', end: false, adminOnly: true, phase: 2 },
+  { to: '/admin/suscripciones', label: 'Suscripciones', end: false, adminOnly: true, pendientes: true },
+  { to: '/admin/planes', label: 'Planes y correo', end: false, adminOnly: true },
   { to: '/admin/mensajes', label: 'Mensajes', end: false, adminOnly: true },
   { to: '/admin/usuarios', label: 'Usuarios', end: false, adminOnly: true },
 ];
@@ -30,6 +32,8 @@ export default function AdminShell({ title, children }: Props) {
   // Las vistas de una fase apagada no aparecen en el menú.
   const items = ITEMS.filter((item) => (isAdmin || !item.adminOnly)
     && (item.phase === 2 ? phase2 : item.phase === 3 ? phase3 : true));
+  // Suscripciones y Planes y correo se ven siempre, no dependen de la fase 2.
+  const pendientes = usePendingCount(isAdmin);
 
   return (
     <section className="bg-surface">
@@ -51,6 +55,9 @@ export default function AdminShell({ title, children }: Props) {
                   }
                 >
                   {item.label}
+                  {item.pendientes && pendientes ? (
+                    <span className="ml-2 rounded-full bg-brand-orange px-2 py-0.5 text-xs font-extrabold text-white">{pendientes}</span>
+                  ) : null}
                 </NavLink>
               </li>
             ))}
