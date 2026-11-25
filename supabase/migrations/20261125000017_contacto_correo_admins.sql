@@ -7,6 +7,20 @@
 -- 5 por hora por correo se esquiva cambiando de correo; sin este tope, un script podría gastar la
 -- cuota diaria de Brevo. Pasado el tope los mensajes se siguen guardando (Admin → Mensajes) y solo
 -- se manda un aviso más: «Llegaron muchos mensajes».
+-- La hora del mensaje la pone siempre la base: quien envía el formulario no puede adelantarla ni
+-- atrasarla para esquivar el límite por correo o el tope por hora.
+create or replace function public.contact_rate_limit() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  new.created_at := now();
+  if (select count(*) from public.contact_messages
+      where lower(email) = lower(new.email) and created_at > now() - interval '1 hour') >= 5 then
+    raise exception 'DEMASIADOS_MENSAJES' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+update public.contact_messages set created_at = now() where created_at > now();
+
 create or replace function public.contact_notify_admins() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare
@@ -15,6 +29,8 @@ declare
   v_title text;
   v_body text;
 begin
+  -- Un mensaje a la vez: así el conteo es exacto aunque lleguen varios juntos.
+  perform pg_advisory_xact_lock(hashtext('contact_notify_admins'));
   select count(*) into v_hora from public.contact_messages
    where created_at > now() - interval '1 hour';
   if v_hora > 21 then

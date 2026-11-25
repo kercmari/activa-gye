@@ -1,9 +1,11 @@
 -- El formulario de contacto avisa a cada administradora (campana + correo) (25/11/2026).
 begin;
-select plan(13);
+select plan(15);
 
 update public.app_settings set phase1 = true, phase3 = false where id = 1;
-delete from public.contact_messages;  -- el tope por hora cuenta todos los mensajes
+-- El tope por hora cuenta todos los mensajes: se borran los del seed para que el conteo sea exacto
+-- (todo se deshace con el rollback del final).
+delete from public.contact_messages;
 insert into auth.users (id, aud, role, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000014a1', 'authenticated', 'authenticated', 'segunda@test.local',
    '{"full_name":"Segunda","birth_date":"1990-01-01","account_type":"paciente"}'),
@@ -57,17 +59,30 @@ update public.app_settings set phase3 = false where id = 1;
 insert into public.contact_messages (name, email, subject, message)
   values ('Larga', 'larga@test.local', 'Asunto' || chr(10) || repeat('x', 150), repeat('m', 3000));
 select ok((select bool_and(title = 'Nuevo mensaje de contacto: ' || left('Asunto ' || repeat('x', 150), 120)
-                       and char_length(body) < 1700)
+                       and body like '%:' || chr(10) || repeat('m', 1500))
              from public.notifications where kind = 'contacto' and title like '%Asunto x%'),
           'asunto sin saltos y recortado a 120; mensaje recortado a 1500');
 
--- 4. El límite de 5 por hora por correo sigue funcionando.
+-- 4. La hora la pone la base: ni atrasada ni adelantada.
+set local role anon;
+select lives_ok($$ insert into public.contact_messages (name, email, subject, message, created_at)
+  values ('Futuro', 'fecha1@test.local', 'Fecha futura', 'Mensaje con fecha.', '2100-01-01'),
+         ('Viejo', 'fecha2@test.local', 'Fecha vieja', 'Mensaje con fecha.', now() - interval '2 hours') $$,
+  'el formulario acepta el envío aunque traiga fecha');
+reset role;
+select ok((select bool_and(created_at = now()) from public.contact_messages
+            where email in ('fecha1@test.local', 'fecha2@test.local')),
+          'la fecha guardada es la de la base, no la que manda el cliente');
+delete from public.contact_messages where email in ('fecha1@test.local', 'fecha2@test.local');
+delete from public.notifications where kind = 'contacto' and title like '%Fecha %';
+
+-- 5. El límite de 5 por hora por correo sigue funcionando.
 set local role anon;
 select throws_ok($$ insert into public.contact_messages (name, email, subject, message)
   select 'Visitante', 'visita@test.local', 'Otra vez', 'Mensaje repetido.' from generate_series(1, 5) $$,
   'P0001', 'DEMASIADOS_MENSAJES', 'el mismo correo no pasa de 5 mensajes por hora');
 
--- 5. Tope global: con correos distintos, solo 20 avisos por hora más uno de «muchos mensajes».
+-- 6. Tope global: con correos distintos, solo 20 avisos por hora más uno de «muchos mensajes».
 -- (un envío por instrucción, como llega desde el formulario; ya hay 2 mensajes en la hora)
 do $$ begin
   for g in 1..25 loop
@@ -85,7 +100,7 @@ select is((select count(*)::int from public.notifications
               and title = 'Llegaron muchos mensajes de contacto'), 1,
           'pasado el tope llega un solo aviso de «muchos mensajes»');
 
--- 6. El trigger no se llama desde el cliente.
+-- 7. El trigger no se llama desde el cliente.
 set local role authenticated;
 select throws_ok($$ select public.contact_notify_admins() $$, '42501', null, 'contact_notify_admins no se llama desde el cliente');
 reset role;
