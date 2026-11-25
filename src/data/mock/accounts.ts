@@ -23,6 +23,8 @@ const SEX: Sex[] = ['femenino', 'masculino', 'otro', 'prefiero_no_decir'];
 const GOALS: Goal[] = ['bajar_peso', 'ganar_musculo', 'mantener', 'resistencia', 'bienestar'];
 const ACTIVITY: ActivityLevel[] = ['sedentario', 'ligero', 'moderado', 'intenso'];
 const ROLES: Role[] = ['usuario', 'nutricionista', 'admin'];
+/** Correos que pueden ser administradores en el simulador (como admin_allowlist en la base). */
+const ADMINS_PERMITIDOS = ['admin@activagye.test'];
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -379,6 +381,7 @@ async function adminListUsers(search?: string): Promise<AdminUser[]> {
       requested_role: u.profile.requested_role ?? null,
       nutri_status: u.profile.nutri_status ?? null,
       avatar_path: u.profile.avatar_path ?? null,
+      can_be_admin: ADMINS_PERMITIDOS.includes(u.email.toLowerCase()),
     }))
     .filter((u) => !q || u.email.includes(q) || u.full_name.toLowerCase().includes(q))
     // Pendientes primero, luego por correo.
@@ -418,6 +421,9 @@ async function adminSetRole(userId: string, role: Role): Promise<void> {
   const users = readTable<StoredUser>('users');
   const idx = users.findIndex((u) => u.id === userId);
   if (idx < 0) throw new AppError('NO_EXISTE', 'No encontramos esa cuenta.');
+  if (role === 'admin' && !ADMINS_PERMITIDOS.includes(users[idx].email.toLowerCase())) {
+    throw new AppError('ADMIN_NO_PERMITIDO', 'Ese correo no está en la lista de administradores permitidos.');
+  }
   users[idx] = { ...users[idx], profile: { ...users[idx].profile, role, updated_at: nowIso() } };
   writeTable('users', users);
 }

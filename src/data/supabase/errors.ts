@@ -19,6 +19,7 @@ export const MENSAJES: Record<string, string> = {
   DATOS_INVALIDOS: 'Revisa los datos e inténtalo de nuevo.',
   NO_PUEDES_CAMBIAR_TU_ROL: 'No puedes cambiar tu propio rol.',
   CUENTA_NO_EXISTE: 'No encontramos esa cuenta.',
+  ADMIN_NO_PERMITIDO: 'Ese correo no está en la lista de administradores permitidos.',
   ROL_PROTEGIDO: 'No puedes cambiar tu rol desde aquí.',
   CUPO_LLENO: 'Por ahora no hay cupos para nuevos pacientes. Inténtalo más adelante.',
   FASE_NO_ACTIVA: 'Esta función aún no está habilitada.',

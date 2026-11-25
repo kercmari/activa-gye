@@ -377,6 +377,7 @@ export const accountPart: Partial<Repo> = {
       requested_role: r.requested_role ?? null,
       nutri_status: r.nutri_status ?? null,
       avatar_path: r.avatar_path ?? null,
+      can_be_admin: Boolean(r.can_be_admin),
     }));
   },
 

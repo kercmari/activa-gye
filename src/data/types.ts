@@ -586,6 +586,8 @@ export interface AdminUser {
   requested_role?: 'nutricionista' | null;
   nutri_status?: NutriStatus | null;
   avatar_path?: string | null;
+  /** Su correo está en la lista de administradores permitidos. */
+  can_be_admin?: boolean;
 }
 
 /** Error con código fijo y mensaje en español listo para mostrar. */

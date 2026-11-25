@@ -163,7 +163,7 @@ export default function AdminUsuariosPage() {
         <>
         <p className="mb-2 text-xs font-bold text-slate-500 md:hidden">Desliza la tabla para ver más columnas →</p>
         <div className="relative overflow-x-auto rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5">
-          <table className="w-full min-w-[40rem] text-left text-sm">
+          <table className="w-full min-w-[52rem] text-left text-sm">
             <thead className="border-b border-slate-200 text-xs font-extrabold uppercase tracking-wider text-slate-500">
               <tr>
                 <th scope="col" className="px-4 py-3">Correo</th>
@@ -187,15 +187,27 @@ export default function AdminUsuariosPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <select
-                          aria-label={`Rol de ${u.email}`}
-                          value={rolDe(u)}
-                          disabled={esYo || guardando}
-                          onChange={(e) => elegirRol(u, e.target.value as Role)}
-                          className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-base font-semibold text-navy-900 sm:text-sm disabled:opacity-60"
-                        >
-                          {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-                        </select>
+                        {/* Botones en vez de lista desplegable: la lista se cortaba dentro de la tabla. */}
+                        <div role="radiogroup" aria-label={`Rol de ${u.email}`} className="inline-flex flex-nowrap gap-1 rounded-xl bg-slate-100 p-1">
+                          {ROLES.filter((r) => r !== 'admin' || u.can_be_admin || rolDe(u) === 'admin').map((r) => {
+                            const activo = rolDe(u) === r;
+                            return (
+                              <button
+                                key={r}
+                                type="button"
+                                role="radio"
+                                aria-checked={activo}
+                                disabled={esYo || guardando}
+                                onClick={() => elegirRol(u, r)}
+                                className={`min-h-11 whitespace-nowrap rounded-lg px-3 text-sm font-bold transition disabled:opacity-60 ${
+                                  activo ? 'bg-navy-900 text-white shadow' : 'text-navy-900 hover:bg-white'
+                                }`}
+                              >
+                                {ROLE_LABELS[r]}
+                              </button>
+                            );
+                          })}
+                        </div>
                         {esYo ? <span className="text-xs font-extrabold text-slate-500">Tú</span> : null}
                       </div>
                     </td>

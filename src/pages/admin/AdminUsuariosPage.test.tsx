@@ -50,9 +50,36 @@ describe('AdminUsuariosPage', () => {
   it('no deja cambiar tu propio rol', async () => {
     renderPage();
 
-    expect(await screen.findByLabelText('Rol de yo@activagye.test')).toBeDisabled();
+    const mio = await screen.findByRole('radiogroup', { name: 'Rol de yo@activagye.test' });
+    for (const b of within(mio).getAllByRole('radio')) expect(b).toBeDisabled();
     expect(screen.getByText('Tú')).toBeInTheDocument();
-    expect(screen.getByLabelText('Rol de otra@activagye.test')).toBeEnabled();
+    const otra = screen.getByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
+    expect(within(otra).getByRole('radio', { name: 'Usuario' })).toBeEnabled();
+    expect(within(otra).getByRole('radio', { name: 'Usuario' })).toHaveAttribute('aria-checked', 'true');
+  });
+
+  it('solo ofrece «Administrador» a correos de la lista permitida', async () => {
+    h.repo.adminListUsers.mockResolvedValue([
+      ...USUARIOS,
+      { id: 'dani', email: 'dani@activagye.test', full_name: 'Dani', role: 'usuario', created_at: '2026-11-04T10:00:00Z', can_be_admin: true },
+    ]);
+    renderPage();
+    const otra = await screen.findByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
+    expect(within(otra).queryByRole('radio', { name: 'Administrador' })).not.toBeInTheDocument();
+    expect(within(otra).getByRole('radio', { name: 'Nutricionista' })).toBeInTheDocument();
+    const dani = screen.getByRole('radiogroup', { name: 'Rol de dani@activagye.test' });
+    expect(within(dani).getByRole('radio', { name: 'Administrador' })).toBeEnabled();
+  });
+
+  it('elegir un rol pide confirmación y llama a adminSetRole', async () => {
+    h.repo.adminSetRole.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderPage();
+    const otra = await screen.findByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
+    await user.click(within(otra).getByRole('radio', { name: 'Nutricionista' }));
+    const dialogo = await screen.findByRole('dialog');
+    await user.click(within(dialogo).getAllByRole('button').at(-1)!);
+    expect(h.repo.adminSetRole).toHaveBeenCalledWith('otra', 'nutricionista');
   });
 
   it('muestra el bloque de solicitudes con Aprobar y Rechazar', async () => {

@@ -673,6 +673,7 @@ values (gen_random_uuid(), '00000000-0000-4000-8000-000000000003', '00000000-000
   'email', now(), now(), now());
 
 update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-000000000001';
+insert into public.admin_allowlist (email) values ('admin@activagye.test') on conflict do nothing;
 update public.profiles set role = 'nutricionista' where id = '00000000-0000-4000-8000-000000000002';
 update public.profiles set goal = 'bajar_peso' where id = '00000000-0000-4000-8000-000000000003';
 
