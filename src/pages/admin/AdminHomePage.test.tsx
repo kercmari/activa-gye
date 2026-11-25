@@ -71,7 +71,8 @@ describe('AdminHomePage', () => {
       Fases: '/admin/fases',
       Lugares: '/admin/lugares',
       'Datos de lugares': '/admin/datos-lugares',
-      Pagos: '/admin/pagos',
+      Suscripciones: '/admin/suscripciones',
+      'Planes y correo': '/admin/planes',
       Usuarios: '/admin/usuarios',
       Mensajes: '/admin/mensajes',
       'Panel nutricionista': '/nutri',
@@ -90,5 +91,14 @@ describe('AdminHomePage', () => {
     expect(within(resumen).getByRole('link', { name: 'Datos de lugares' })).toHaveAttribute('href', '/admin/datos-lugares');
     expect(within(resumen).queryByRole('link', { name: 'Pagos' })).not.toBeInTheDocument();
     expect(within(resumen).queryByRole('link', { name: 'Panel nutricionista' })).not.toBeInTheDocument();
+  });
+
+  it('con la fase 2 apagada muestra Suscripciones y Planes y correo, y ya no hay tarjeta de Pagos', () => {
+    renderPage();
+
+    const resumen = screen.getByRole('list', { name: 'Secciones de administración' });
+    expect(within(resumen).getByRole('link', { name: 'Suscripciones' })).toHaveAttribute('href', '/admin/suscripciones');
+    expect(within(resumen).getByRole('link', { name: 'Planes y correo' })).toHaveAttribute('href', '/admin/planes');
+    expect(within(resumen).queryByRole('link', { name: 'Pagos' })).not.toBeInTheDocument();
   });
 });

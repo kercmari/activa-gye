@@ -1,10 +1,13 @@
 import { Link, useLocation } from 'react-router';
 import { useAuth } from '../../auth/AuthContext';
+import { useSettings } from '../../auth/SettingsContext';
+import { contactMailto } from '../../lib/mailto';
 
 const linkClass = 'inline-flex min-h-11 items-center text-sm text-slate-300 transition-colors hover:text-white';
 
 export function Footer() {
   const { session } = useAuth();
+  const { settings } = useSettings();
   const { pathname } = useLocation();
   // En «Mi plan» la barra inferior fija tapa el pie: se deja espacio bajo la línea de derechos.
   const conBarraInferior = pathname.startsWith('/mi-plan');
@@ -46,6 +49,7 @@ export function Footer() {
           <ul className="mt-4 flex flex-col gap-2.5">
             <li><Link to="/conocenos" className={linkClass}>Conócenos</Link></li>
             <li><Link to="/contacto" className={linkClass}>Contacto</Link></li>
+            <li><a href={contactMailto(settings.admin_email)} className={linkClass}>Escribir a la administración</a></li>
             <li><Link to="/privacidad" className={linkClass}>Privacidad y términos</Link></li>
           </ul>
         </div>
