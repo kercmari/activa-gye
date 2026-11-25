@@ -46,9 +46,12 @@ insert into public.care_requests (patient_id, nutritionist_id, status, accepted_
   ('00000000-0000-0000-0000-0000000000e3', '00000000-0000-0000-0000-0000000000e1', 'aceptada', now());
 
 -- m tiene agenda de su nutricionista (para probar la lectura con y sin suscripción).
+-- Días sin receta: filas anteriores a la migración 13. El trigger que exige receta se apaga solo para cargarlas.
+alter table public.plan_days disable trigger plan_days_receta_guard;
 insert into public.plan_days (patient_id, nutritionist_id, day, title, meals) values
   ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000e1', current_date, 'Día 1 de prueba', 'Almuerzo'),
   ('00000000-0000-0000-0000-0000000000e4', '00000000-0000-0000-0000-0000000000e1', current_date + 1, 'Día 2 de prueba', 'Cena');
+alter table public.plan_days enable trigger plan_days_receta_guard;
 
 -- Guía: una publicada y una oculta.
 insert into public.guide_entries (slug, category, title, published) values

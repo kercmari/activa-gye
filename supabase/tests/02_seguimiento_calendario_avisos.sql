@@ -1,11 +1,12 @@
 -- Pruebas de la migración 3: seguimiento, calendario del plan y avisos.
 -- Usuarios: a1 = admin, b1/b2 = nutricionistas, c1/c2 = pacientes (ambos con ficha y solicitud aceptada por b1 en c1).
 begin;
-select plan(30);
+select plan(31);
 
 -- ============ Datos de prueba (como superusuario; el trigger crea los perfiles) ============
 -- Cupo alto para que el registro de pacientes de prueba no choque con el cupo.
-update public.app_settings set phase2 = true, patient_limit = 1000 where id = 1;
+-- Límite gratis de registros alto: este archivo prueba otras reglas (los límites están en 10).
+update public.app_settings set phase2 = true, patient_limit = 1000, free_daily_record_limit = 1000 where id = 1;
 
 insert into auth.users (id, aud, role, email, raw_user_meta_data) values
   ('00000000-0000-0000-0000-0000000000a1', 'authenticated', 'authenticated', 'admin3@test.local', '{"full_name":"Admin Prueba"}'),
@@ -32,6 +33,12 @@ insert into public.patient_subscriptions (patient_id, plan_id, status, current_p
 select p.id, (select sp.id from public.subscription_plans sp where sp.name = 'Seguimiento mensual'), 'activa', now() + interval '30 days'
   from (values ('00000000-0000-0000-0000-0000000000c1'::uuid), ('00000000-0000-0000-0000-0000000000c2'::uuid)) as p(id);
 
+-- Recetas (migración 13): los días van dentro de una receta. La paciente uno tiene saldo de 10.
+update public.patient_subscriptions set recipes_left = 10 where patient_id = '00000000-0000-0000-0000-0000000000c1';
+insert into public.prescriptions (id, patient_id, nutritionist_id, kind, title) values
+  ('00000000-0000-0000-0000-0000000002a1', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000b1', 'dieta', 'Semana uno'),
+  ('00000000-0000-0000-0000-0000000002a2', '00000000-0000-0000-0000-0000000000c1', '00000000-0000-0000-0000-0000000000b1', 'dieta', 'Semana dos');
+
 -- ============ Solicitud y aceptación (fase 2 encendida) ============
 do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
@@ -55,10 +62,13 @@ do $$ begin
   set local role authenticated;
 end $$;
 select lives_ok(
-  $$ insert into public.plan_days (patient_id, day, title, meals)
-       select '00000000-0000-0000-0000-0000000000c1', d::date, 'Dia ' || to_char(d, 'DD/MM'), 'Desayuno: avena'
+  $$ insert into public.plan_days (patient_id, day, title, meals, prescription_id)
+       select '00000000-0000-0000-0000-0000000000c1', d::date, 'Dia ' || to_char(d, 'DD/MM'), 'Desayuno: avena',
+              '00000000-0000-0000-0000-0000000002a1'
          from generate_series('2026-11-23'::date, '2026-11-29'::date, interval '1 day') as d $$,
   'el nutricionista de la paciente crea 7 días del plan');
+select lives_ok($$ select public.deliver_prescription('00000000-0000-0000-0000-0000000002a1') $$,
+  'el nutricionista entrega la receta: sus días se abren a la paciente');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 do $$ begin
@@ -112,7 +122,8 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select is(public.copy_plan_week('00000000-0000-0000-0000-0000000000c1', '2026-11-23', '2026-11-30'), 7,
+select is(public.copy_plan_week('00000000-0000-0000-0000-0000000000c1', '2026-11-23', '2026-11-30',
+                                '00000000-0000-0000-0000-0000000002a2'), 7,
   'copy_plan_week copia 7 días y devuelve 7');
 select is((select count(*)::int from public.plan_days
             where patient_id = '00000000-0000-0000-0000-0000000000c1'
@@ -134,7 +145,8 @@ do $$ begin
   set local role authenticated;
 end $$;
 select throws_ok(
-  $$ select public.copy_plan_week('00000000-0000-0000-0000-0000000000c1', '2026-11-23', '2026-12-07') $$,
+  $$ select public.copy_plan_week('00000000-0000-0000-0000-0000000000c1', '2026-11-23', '2026-12-07',
+       '00000000-0000-0000-0000-0000000002a2') $$,
   '42501', null, 'otro nutricionista no puede copiar la semana de una paciente ajena');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
