@@ -1,39 +1,27 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
-import {
-  repo,
-  type Invoice,
-  type InvoiceStatus,
-  type Subscription,
-  type SubscriptionPlan,
-} from '../../data';
+import { useSettings } from '../../auth/SettingsContext';
+import { repo, type Subscription, type SubscriptionPlan } from '../../data';
 import PhaseGate from '../../components/PhaseGate';
 import NutriShell from '../../components/nutri/NutriShell';
 import { formatDateLong } from '../../components/profile/labels';
 import { useAsync } from '../../components/profile/useAsync';
 import Badge, { type BadgeTone } from '../../components/ui/Badge';
 import { Button, LinkButton } from '../../components/ui/Button';
-import { TextField } from '../../components/ui/Field';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../../components/ui/States';
+import { subscriptionMailto } from '../../lib/mailto';
 
 interface Data {
   subscription: Subscription | null;
   plans: SubscriptionPlan[];
-  invoices: Invoice[];
 }
 
 const STATUS_BADGE: Record<string, { label: string; tone: BadgeTone }> = {
-  pendiente: { label: 'Pendiente de pago', tone: 'orange' },
+  pendiente: { label: 'Solicitud pendiente', tone: 'orange' },
   activa: { label: 'Activa', tone: 'green' },
   vencida: { label: 'Vencida', tone: 'orange' },
   cancelada: { label: 'Cancelada', tone: 'slate' },
-};
-
-const INVOICE_BADGE: Record<InvoiceStatus, { label: string; tone: BadgeTone }> = {
-  pendiente: { label: 'Pendiente de pago', tone: 'orange' },
-  reportada: { label: 'Comprobante reportado', tone: 'blue' },
-  pagada: { label: 'Pagada', tone: 'green' },
-  anulada: { label: 'Anulada', tone: 'slate' },
 };
 
 function money(amount: number): string {
@@ -45,8 +33,8 @@ function StatusCard({ subscription }: { subscription: Subscription | null }) {
     return (
       <div className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
         <p className="eyebrow">Estado actual</p>
-        <p className="display mt-3 text-2xl text-navy-900">Sin suscripción</p>
-        <p className="mt-2 text-sm text-slate-500">Elige un plan para poder aceptar pacientes.</p>
+        <p className="display mt-3 text-2xl text-navy-900">Plan gratis</p>
+        <p className="mt-2 text-sm text-slate-500">Usas el plan gratis hasta que elijas uno de pago.</p>
       </div>
     );
   }
@@ -58,9 +46,9 @@ function StatusCard({ subscription }: { subscription: Subscription | null }) {
       ? `Activa hasta ${formatDateLong(subscription.current_period_end.slice(0, 10))}`
       : 'Activa';
   } else if (subscription.status === 'pendiente') {
-    detail = 'Paga la factura de tu plan y informa el comprobante.';
+    detail = 'Tu solicitud está esperando la aprobación de la administradora.';
   } else if (subscription.status === 'vencida') {
-    detail = 'Renueva tu plan para seguir aceptando pacientes.';
+    detail = 'Pide de nuevo tu plan para seguir con todos los cupos.';
   }
 
   return (
@@ -75,38 +63,71 @@ function StatusCard({ subscription }: { subscription: Subscription | null }) {
   );
 }
 
+function FreeCard({ patients, records, current }: { patients: number; records: number; current: boolean }) {
+  return (
+    <article className="flex flex-col rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="display text-2xl text-navy-900">Gratis</h3>
+        {current ? <Badge tone="green">Tu plan actual</Badge> : null}
+      </div>
+      <p className="mt-3 text-3xl font-extrabold text-navy-900">$0</p>
+      <ul className="mt-4 space-y-2 text-sm text-slate-600">
+        <li>Hasta {patients} pacientes</li>
+        <li>{records} registros por día</li>
+      </ul>
+    </article>
+  );
+}
+
 function PlanCard({
   plan,
+  current,
   hasActive,
   busy,
   anyBusy,
-  onChoose,
+  onRequest,
 }: {
   plan: SubscriptionPlan;
+  current: boolean;
   hasActive: boolean;
   busy: boolean;
   anyBusy: boolean;
-  onChoose: (plan: SubscriptionPlan) => void;
+  onRequest: (plan: SubscriptionPlan) => void;
 }) {
-  let label = 'Elegir este plan';
-  if (hasActive) label = 'Ya tienes una suscripción activa';
-  else if (busy) label = 'Creando factura…';
+  let label = 'Solicitar este plan';
+  if (busy) label = 'Registrando solicitud…';
+  else if (current) label = 'Renovar este plan';
+  else if (hasActive) label = 'Mejorar a este plan';
 
   return (
     <article className="flex flex-col rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
-      <h3 className="display text-2xl text-navy-900">{plan.name}</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="display text-2xl text-navy-900">{plan.name}</h3>
+        {current ? <Badge tone="green">Tu plan actual</Badge> : null}
+      </div>
       <p className="mt-3 text-3xl font-extrabold text-navy-900">
         {money(plan.monthly_price)} <span className="text-base font-bold text-slate-500">al mes</span>
       </p>
-      <p className="mt-2 text-sm text-slate-500">Hasta {plan.patient_quota} pacientes</p>
+      <ul className="mt-4 space-y-2 text-sm text-slate-600">
+        <li>Hasta {plan.patient_quota} pacientes</li>
+        <li>
+          {plan.daily_record_limit === null ? 'Sin límite de registros por día' : `${plan.daily_record_limit} registros por día`}
+        </li>
+        {plan.features.map((f) => (
+          <li key={f} className="flex gap-2">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
       <div className="mt-6">
         <Button
           variant="primary"
           size="md"
           className="w-full"
-          disabled={hasActive || anyBusy}
+          disabled={anyBusy}
           aria-busy={busy || undefined}
-          onClick={() => onChoose(plan)}
+          onClick={() => onRequest(plan)}
         >
           {label}
         </Button>
@@ -115,155 +136,94 @@ function PlanCard({
   );
 }
 
-function InvoicePayForm({ invoice, onPaid }: { invoice: Invoice; onPaid: () => void }) {
-  const [reference, setReference] = useState('');
-  const [fieldError, setFieldError] = useState<string | undefined>();
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-
-  async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const ref = reference.trim();
-    if (ref.length < 4 || ref.length > 100) {
-      setFieldError('El número de comprobante debe tener entre 4 y 100 caracteres.');
-      return;
-    }
-    setFieldError(undefined);
-    setSubmitError(null);
-    setBusy(true);
-    try {
-      await repo.reportInvoicePaid(invoice.id, ref);
-      onPaid();
-    } catch (err) {
-      setSubmitError(errorMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <form onSubmit={submit} noValidate className="mt-4 space-y-4 rounded-2xl bg-slate-50 p-4">
-      <TextField
-        label="Número de comprobante"
-        value={reference}
-        onChange={(e) => setReference(e.target.value)}
-        error={fieldError}
-        maxLength={100}
-        autoComplete="off"
-      />
-      {submitError ? <p role="alert" className="text-sm font-semibold text-red-700">{submitError}</p> : null}
-      <Button type="submit" variant="primary" size="md" disabled={busy}>
-        {busy ? 'Enviando…' : 'Informar pago'}
-      </Button>
-    </form>
-  );
-}
-
 function SuscripcionData() {
+  const { session } = useAuth();
+  const { settings } = useSettings();
   const state = useAsync<Data>(async () => {
-    const [subscription, plans, invoices] = await Promise.all([
-      repo.getMySubscription(),
-      repo.listPlans(),
-      repo.listMyInvoices(),
-    ]);
-    return { subscription, plans, invoices: invoices.filter((i) => i.kind === 'suscripcion') };
+    const [subscription, plans] = await Promise.all([repo.getMySubscription(), repo.listPlans()]);
+    return { subscription, plans };
   }, []);
 
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
-  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
-  const [planError, setPlanError] = useState<string | null>(null);
+  const [registrada, setRegistrada] = useState(false);
+  const [rpcError, setRpcError] = useState<string | null>(null);
 
   if (state.status === 'loading') return <Loading />;
   if (state.status === 'error') return <ErrorState message={state.message} onRetry={state.reload} />;
 
-  const { subscription, plans, invoices } = state.data;
+  const { subscription, plans } = state.data;
   const hasActive = subscription?.status === 'activa';
 
-  async function choose(plan: SubscriptionPlan) {
+  async function pedir(plan: SubscriptionPlan) {
     setBusyPlanId(plan.id);
-    setPlanError(null);
-    setCreatedInvoice(null);
+    setRegistrada(false);
+    setRpcError(null);
     try {
-      const invoice = await repo.choosePlan(plan.id);
-      setCreatedInvoice(invoice);
-      state.reload();
+      await repo.choosePlan(plan.id);
+      setRegistrada(true);
     } catch (err) {
-      setPlanError(errorMessage(err));
+      setRpcError(errorMessage(err));
     } finally {
       setBusyPlanId(null);
     }
+    // Se abre el correo igual, con el pedido listo, aunque el registro haya fallado.
+    window.location.href = subscriptionMailto(settings.admin_email, {
+      plan: plan.name,
+      price: plan.monthly_price,
+      fullName: session?.profile.full_name ?? '',
+      email: session?.user.email ?? '',
+    });
+    state.reload();
   }
 
   return (
     <div className="space-y-8">
       <StatusCard subscription={subscription} />
 
-      {createdInvoice ? (
+      {registrada ? (
         <div role="status" className="rounded-2xl bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
-          Factura creada: {createdInvoice.concept} por {money(createdInvoice.amount)}. Haz la transferencia y luego informa el comprobante abajo.
+          Tu solicitud quedó registrada. Envía el correo y la administradora la aprobará al confirmar tu transferencia.
         </div>
       ) : null}
-      {planError ? (
-        <p role="alert" className="rounded-2xl bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">{planError}</p>
+      {rpcError ? (
+        <p role="alert" className="rounded-2xl bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">
+          No pudimos registrar tu solicitud: {rpcError} Igual se abrió tu correo para enviar el pedido.
+        </p>
       ) : null}
 
       <section aria-labelledby="planes" className="space-y-4">
         <h2 id="planes" className="display text-2xl text-navy-900">Planes</h2>
-        {plans.length === 0 ? (
-          <EmptyState
-            title="Planes"
-            text="No hay planes disponibles por ahora."
-            action={{ label: 'Volver al tablero', to: '/nutri' }}
+        <p className="text-sm text-slate-500">
+          Cada plan se diferencia por sus cupos de pacientes y registros por día. Para pedir un plan de pago se abre tu correo con el pedido listo.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <FreeCard
+            patients={settings.free_patient_limit}
+            records={settings.free_daily_record_limit}
+            current={!hasActive}
           />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {plans.map((plan) => (
+          {plans.length === 0 ? (
+            <div className="md:col-span-1">
+              <EmptyState
+                title="Planes de pago"
+                text="No hay planes de pago disponibles por ahora."
+                action={{ label: 'Volver al tablero', to: '/nutri' }}
+              />
+            </div>
+          ) : (
+            plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
+                current={hasActive && subscription?.plan_id === plan.id}
                 hasActive={hasActive}
                 busy={busyPlanId === plan.id}
                 anyBusy={busyPlanId !== null}
-                onChoose={choose}
+                onRequest={pedir}
               />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section aria-labelledby="como-pagar" className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5 md:p-8">
-        <h2 id="como-pagar" className="display text-2xl text-navy-900">Cómo pagar</h2>
-        <p className="mt-3 text-slate-600">
-          Haz una transferencia por el monto de la factura y escribe aquí el número de comprobante. El administrador confirmará el pago.
-        </p>
-        <p className="mt-2 text-sm text-slate-500">Los datos bancarios te los da el administrador por correo.</p>
-      </section>
-
-      <section aria-labelledby="facturas" className="space-y-4">
-        <h2 id="facturas" className="display text-2xl text-navy-900">Mis facturas de suscripción</h2>
-        {invoices.length === 0 ? (
-          <EmptyState title="Facturas" text="Aún no tienes facturas de suscripción." />
-        ) : (
-          <ul className="space-y-4">
-            {invoices.map((invoice) => {
-              const badge = INVOICE_BADGE[invoice.status];
-              return (
-                <li key={invoice.id} className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
-                  <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                    <div className="min-w-0">
-                      <p className="font-extrabold text-navy-900">{invoice.concept}</p>
-                      <p className="text-sm text-slate-500">{money(invoice.amount)}</p>
-                    </div>
-                    <Badge tone={badge.tone}>{badge.label}</Badge>
-                  </div>
-                  {invoice.status === 'pendiente' ? (
-                    <InvoicePayForm invoice={invoice} onPaid={state.reload} />
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        )}
+            ))
+          )}
+        </div>
       </section>
     </div>
   );
@@ -274,9 +234,9 @@ function SuscripcionContent() {
   if (session?.profile.role === 'admin') {
     return (
       <div className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
-        <p className="font-bold text-navy-900">Como administrador no necesitas suscripción.</p>
+        <p className="font-bold text-navy-900">Como administradora no necesitas un plan.</p>
         <div className="mt-6">
-          <LinkButton to="/admin/pagos" variant="secondary" size="md">Ir a pagos</LinkButton>
+          <LinkButton to="/admin/suscripciones" variant="secondary" size="md">Ir a suscripciones</LinkButton>
         </div>
       </div>
     );
@@ -286,8 +246,8 @@ function SuscripcionContent() {
 
 export default function Page() {
   return (
-    <PhaseGate phase={2} title="Mi suscripción" back={{ to: '/', label: 'Ir al inicio' }}>
-      <NutriShell title="Mi suscripción">
+    <PhaseGate phase={2} title="Mi plan" back={{ to: '/', label: 'Ir al inicio' }}>
+      <NutriShell title="Mi plan">
         <SuscripcionContent />
       </NutriShell>
     </PhaseGate>

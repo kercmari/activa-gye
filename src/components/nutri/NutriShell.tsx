@@ -5,8 +5,9 @@ import PageHeader from '../ui/PageHeader';
 
 const ITEMS = [
   { to: '/nutri', label: 'Tablero', end: true },
+  { to: '/nutri/pacientes', label: 'Mis pacientes', end: false },
   { to: '/nutri/solicitudes', label: 'Solicitudes', end: false },
-  { to: '/nutri/suscripcion', label: 'Mi suscripción', end: false },
+  { to: '/nutri/suscripcion', label: 'Mi plan', end: false },
 ];
 
 interface Props {

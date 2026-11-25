@@ -30,6 +30,7 @@ import ReportePage from './pages/panel/ReportePage';
 import NotificacionesPage from './pages/NotificacionesPage';
 import TableroPage from './pages/nutri/TableroPage';
 import SolicitudesPage from './pages/nutri/SolicitudesPage';
+import MisPacientesPage from './pages/nutri/MisPacientesPage';
 import PacientePage from './pages/nutri/PacientePage';
 import SuscripcionPage from './pages/nutri/SuscripcionPage';
 import AdminHomePage from './pages/admin/AdminHomePage';
@@ -93,6 +94,7 @@ export function AppRoutes() {
         <Route element={<RequireRole roles={['nutricionista', 'admin']} />}>
           <Route path="nutri" element={<TableroPage />} />
           <Route path="nutri/solicitudes" element={<SolicitudesPage />} />
+          <Route path="nutri/pacientes" element={<MisPacientesPage />} />
           <Route path="nutri/pacientes/:id" element={<PacientePage />} />
           <Route path="nutri/suscripcion" element={<SuscripcionPage />} />
           <Route path="admin/plantillas" element={<AdminPlantillasPage />} />
