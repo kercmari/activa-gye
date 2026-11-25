@@ -182,7 +182,7 @@ function SuscripcionData() {
 
       {registrada ? (
         <div role="status" className="rounded-2xl bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-700">
-          Tu solicitud quedó registrada. Envía el correo y la administradora la aprobará al confirmar tu transferencia.
+          Tu solicitud quedó registrada. Envía el correo y la administradora la aprobará al confirmar tu pago.
         </div>
       ) : null}
       {rpcError ? (

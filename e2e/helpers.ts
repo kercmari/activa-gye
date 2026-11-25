@@ -274,8 +274,10 @@ export async function aprobarSuscripcionDe(page: Page, correo: string) {
   await expect.poll(() => ruta(page)).toBe('/perfil');
   await page.goto('/admin/suscripciones');
   const solicitud = page.getByRole('listitem').filter({ hasText: correo }).first();
+  // Espera a que la lista cargue (si la fila no aparece, falla aquí en vez de no aprobar en silencio).
+  await expect(solicitud).toBeVisible({ timeout: 15_000 });
   const aprobar = solicitud.getByRole('button', { name: 'Aprobar', exact: true });
-  if (await aprobar.isVisible()) {
+  if ((await aprobar.count()) > 0) {
     await aprobar.click();
     await page.getByRole('button', { name: 'Sí, aprobar', exact: true }).click();
     await expect(aprobar).toHaveCount(0);

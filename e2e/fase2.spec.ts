@@ -82,17 +82,29 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await seguimiento.getByRole('button', { name: 'Guardar seguimiento', exact: true }).click();
     await expect(seguimiento.getByLabel('Peso (kg)', { exact: true })).toHaveValue('', { timeout: 15_000 });
 
-    await page.getByRole('tab', { name: 'Calendario', exact: true }).click();
-    const diaHoy = page.getByRole('listitem').filter({ has: page.getByText('Hoy', { exact: true }) });
-    await diaHoy.getByRole('button', { name: 'Agregar plan', exact: true }).click();
-    await page.getByLabel('Título', { exact: true }).fill(titulo);
-    await page.getByLabel('Comidas', { exact: true }).fill('Desayuno: avena. Almuerzo: pollo con ensalada.');
-    await page.getByRole('button', { name: 'Guardar', exact: true }).click();
-    await expect(diaHoy.getByText(titulo, { exact: true })).toBeVisible();
-
     // 3b. Suscripción del paciente: la agenda pagada solo se ve con suscripción activa.
     await salir(page);
     await suscribirPaciente(page, paciente.correo, paciente.clave);
+
+    // 3c. El calendario del paciente sale de las recetas: la nutricionista crea una con el día de hoy y la entrega.
+    const hoyISO = new Date().toLocaleDateString('en-CA');
+    await ingresar(page, NUTRI.correo, NUTRI.clave);
+    await expect.poll(() => ruta(page)).toBe('/perfil');
+    await page.goto(rutaPaciente);
+    await page.getByRole('tab', { name: 'Recetas', exact: true }).click();
+    await page.getByRole('button', { name: 'Nueva receta', exact: true }).click();
+    await page.getByLabel('Título', { exact: true }).fill(`Receta ${titulo}`);
+    await page.getByLabel('Texto de la receta', { exact: true }).fill('Receta de prueba E2E.');
+    await page.getByRole('button', { name: 'Guardar borrador', exact: true }).click();
+    await page.getByLabel('Fecha', { exact: true }).fill(hoyISO);
+    await page.getByLabel('Título del día', { exact: true }).fill(titulo);
+    await page.getByLabel('Comidas', { exact: true }).fill('Desayuno: avena. Almuerzo: pollo con ensalada.');
+    await page.getByRole('button', { name: 'Agregar día', exact: true }).click();
+    await expect(page.getByText(titulo, { exact: true }).first()).toBeVisible();
+    await page.getByRole('button', { name: 'Entregar', exact: true }).click();
+    await page.getByRole('button', { name: 'Entregar receta', exact: true }).click();
+    await expect(page.getByText(/Entregada el/)).toBeVisible();
+    await salir(page);
 
     // 4. Paciente ve el día y lo marca cumplido.
     await ingresar(page, paciente.correo, paciente.clave);

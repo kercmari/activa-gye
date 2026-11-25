@@ -79,7 +79,7 @@ export default function AdminSuscripcionesPage() {
           <section aria-labelledby="pendientes-titulo">
             <h2 id="pendientes-titulo" className="display text-2xl text-navy-900">Solicitudes pendientes</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Escríbele para confirmar, y aprueba cuando recibas la transferencia.
+              Escríbele para confirmar, y aprueba cuando confirmes el pago.
             </p>
             {state.data.pending.length === 0 ? (
               <div className="mt-5">
@@ -142,7 +142,7 @@ export default function AdminSuscripcionesPage() {
           title={accion.tipo === 'aprobar' ? '¿Aprobar esta suscripción?' : '¿Rechazar esta solicitud?'}
           text={
             accion.tipo === 'aprobar'
-              ? `Confirma que recibiste la transferencia de ${accion.row.full_name || accion.row.email}. La suscripción quedará activa por 30 días.`
+              ? `Confirma que recibiste el pago de ${accion.row.full_name || accion.row.email}. La suscripción quedará activa por 30 días.`
               : `La solicitud de ${accion.row.full_name || accion.row.email} se cancelará.`
           }
           confirmLabel={accion.tipo === 'aprobar' ? 'Sí, aprobar' : 'Sí, rechazar'}

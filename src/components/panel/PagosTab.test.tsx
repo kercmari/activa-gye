@@ -75,6 +75,8 @@ describe('PagosTab', () => {
     expect(screen.getByText(/Pendiente de aprobación de la administración/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /informar pago/i })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/comprobante/i)).not.toBeInTheDocument();
+    // Sin facturas de la nutricionista no se da la instrucción de transferencia a la nutricionista.
+    expect(screen.queryByText(/Paga por transferencia a tu nutricionista/)).not.toBeInTheDocument();
   });
 
   it('informar pago valida y llama reportInvoicePaid', async () => {

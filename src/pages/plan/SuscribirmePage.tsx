@@ -93,7 +93,7 @@ function Suscripcion({ datos, onRetry }: { datos: Datos; onRetry: () => void }) 
         <div role="status" className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
           <p className="eyebrow text-brand-orange">Solicitud pendiente</p>
           <p className="mt-2 font-extrabold text-navy-900">Tu solicitud de suscripción está registrada.</p>
-          <p className="mt-2 text-sm text-slate-600">Si aún no enviaste el correo, pulsa el botón de tu plan. La administradora la aprobará al confirmar tu transferencia.</p>
+          <p className="mt-2 text-sm text-slate-600">Si aún no enviaste el correo, pulsa el botón de tu plan. La administradora la aprobará al confirmar tu pago.</p>
         </div>
         <PlanesPaciente planes={planes} onRetry={onRetry} />
       </div>
@@ -203,7 +203,7 @@ function PlanCard({ plan, adminEmail, fullName, email }: PlanCardProps) {
       ) : null}
       {registrada ? (
         <p role="status" className="mt-4 rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-          Tu solicitud quedó registrada. Envía el correo y la administradora la aprobará al confirmar tu transferencia.
+          Tu solicitud quedó registrada. Envía el correo y la administradora la aprobará al confirmar tu pago.
         </p>
       ) : null}
       <div className="mt-6">
