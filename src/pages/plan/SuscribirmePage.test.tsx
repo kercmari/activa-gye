@@ -1,200 +1,154 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { repo, type Invoice, type PatientSubscription, type Session, type SubscriptionPlan, type Trial } from '../../data';
-import { useAuth } from '../../auth/AuthContext';
-import { usePhase } from '../../auth/SettingsContext';
-import { formatDateTimeLong } from '../../components/profile/labels';
+import { MemoryRouter } from 'react-router';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { repo, type PatientSubscription, type RecipeBalance, type Session, type SubscriptionPlan } from '../../data';
 import SuscribirmePage from './SuscribirmePage';
 
 vi.mock('../../auth/AuthContext', () => ({ useAuth: vi.fn() }));
-vi.mock('../../auth/SettingsContext', () => ({ usePhase: vi.fn() }));
+vi.mock('../../auth/SettingsContext', () => ({
+  usePhase: vi.fn(() => true),
+  useSettings: vi.fn(),
+}));
 vi.mock('../../data', () => ({
   repo: {
     getMyPatientSubscription: vi.fn(),
     listPatientPlans: vi.fn(),
-    getMyTrial: vi.fn(),
-    listMyInvoices: vi.fn(),
+    getRecipeBalance: vi.fn(),
     choosePatientPlan: vi.fn(),
-    reportInvoicePaid: vi.fn(),
   },
 }));
 
+import { useAuth } from '../../auth/AuthContext';
+import { useSettings } from '../../auth/SettingsContext';
+
 const SESSION: Session = {
-  user: { id: 'u1', email: 'ana@activagye.test' },
+  user: { id: 'pac-1', email: 'ana@ejemplo.ec' },
   profile: {
-    id: 'u1', full_name: 'Ana Pérez', birth_date: '2000-05-10', sex: 'femenino', phone: null, sector_id: null,
+    id: 'pac-1', full_name: 'Ana Pérez', birth_date: '2000-05-10', sex: 'femenino', phone: null, sector_id: null,
     goal: null, activity_level: null, role: 'usuario', created_at: '2026-01-01', updated_at: '2026-01-01',
   },
-};
+} as unknown as Session;
 
-const PLAN: SubscriptionPlan = { id: 'p1', name: 'Seguimiento mensual', monthly_price: 15, patient_quota: 10, active: true, sort: 1, daily_record_limit: null, recipe_quota: 10, features: [] };
+const PLAN: SubscriptionPlan = {
+  id: 'plan-seg',
+  name: 'Seguimiento mensual',
+  audience: 'paciente',
+  monthly_price: 40,
+  patient_quota: 1,
+  daily_record_limit: null,
+  recipe_quota: 10,
+  features: ['Calendario con días de tus recetas', 'Tu nutricionista te entrega cada receta'],
+  active: true,
+} as unknown as SubscriptionPlan;
 
-const FACTURA: Invoice = {
-  id: 'inv1', payer_id: 'u1', payee_id: null, kind: 'suscripcion_paciente', subscription_id: 's1',
-  concept: 'Suscripción Seguimiento mensual', amount: 15, status: 'pendiente', payment_reference: null,
-  reported_at: null, paid_at: null, created_at: '2026-11-21T10:00:00Z',
-};
-
-function trialDe(completados: number): Trial {
-  return {
-    template_name: 'Plantilla', template_status: 'aprobada', author_name: 'Nutri', kcal_target: 1800, portion_factor: 1,
-    started_on: '2026-11-14', today: '2026-11-21', current_day: null, finished: completados === 7,
-    days: Array.from({ length: 7 }, (_, i) => ({
-      day_number: i + 1, unlocked: true, unlocked_on: '2026-11-14', completed_at: i < completados ? '2026-11-20' : null,
-      items_total: 4, items_done: 4, items: [],
-    })),
-  };
-}
+const ACTIVA: PatientSubscription = {
+  id: 'sub-1',
+  plan_name: 'Seguimiento mensual',
+  status: 'activa',
+  current_period_end: '2099-01-15T00:00:00Z',
+} as unknown as PatientSubscription;
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={['/mi-plan/suscripcion']}>
-      <Routes>
-        <Route path="/mi-plan/suscripcion" element={<SuscribirmePage />} />
-        <Route path="/mi-plan/hoy" element={<p>PANTALLA HOY</p>} />
-      </Routes>
+    <MemoryRouter>
+      <SuscribirmePage />
     </MemoryRouter>,
   );
 }
 
-beforeEach(() => {
-  vi.resetAllMocks();
-  vi.mocked(useAuth).mockReturnValue({ session: SESSION, loading: false, refresh: vi.fn(async () => {}) });
-  vi.mocked(usePhase).mockReturnValue(true);
-  vi.mocked(repo.getMyPatientSubscription).mockResolvedValue(null);
-  vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
-  vi.mocked(repo.getMyTrial).mockResolvedValue(trialDe(7));
-  vi.mocked(repo.listMyInvoices).mockResolvedValue([]);
-});
+const originalLocation = window.location;
 
-describe('SuscribirmePage', () => {
-  it('sin suscripción lista los planes y «Suscribirme» llama a choosePatientPlan', async () => {
-    const user = userEvent.setup();
-    vi.mocked(repo.choosePatientPlan).mockResolvedValue(FACTURA);
+describe('SuscribirmePage (suscripción por correo y saldo de recetas)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(useAuth).mockReturnValue({ session: SESSION, loading: false, refresh: async () => {} } as never);
+    vi.mocked(useSettings).mockReturnValue({
+      settings: { phase2: true, admin_email: 'admin@vitgo.test' },
+      loading: false,
+      reload: async () => {},
+    } as never);
+    // jsdom no navega: se reemplaza location para comprobar el href del mailto.
+    Object.defineProperty(window, 'location', { configurable: true, value: { ...originalLocation, href: '' } });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, 'location', { configurable: true, value: originalLocation });
+  });
+
+  it('sin suscripción muestra el plan y el botón de correo', async () => {
+    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue(null);
+    vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
     renderPage();
 
     expect(await screen.findByText('Seguimiento mensual')).toBeInTheDocument();
-    expect(screen.getByText('Una nutricionista toma tu caso')).toBeInTheDocument();
-    expect(screen.getByText('Agenda personalizada cada semana')).toBeInTheDocument();
-    expect(screen.getByText('Seguimiento y chequeos')).toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: 'Suscribirme' }));
-
-    await waitFor(() => expect(repo.choosePatientPlan).toHaveBeenCalledWith('p1'));
-    expect(await screen.findByText(/Te enviaremos los datos de la cuenta por correo/)).toBeInTheDocument();
-    expect(screen.getByText('Suscripción Seguimiento mensual')).toBeInTheDocument();
+    expect(screen.getByText('$40 al mes')).toBeInTheDocument();
+    expect(screen.getByText('10 recetas de tu nutricionista')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Contactar por correo para solicitar una suscripción' })).toBeInTheDocument();
+    // Nunca datos bancarios ni formulario de transferencia.
+    expect(screen.queryByText(/transferencia/i)).toBeNull();
+    expect(screen.queryByRole('textbox')).toBeNull();
   });
 
-  it('muestra el error de choosePatientPlan si falla', async () => {
+  it('el botón registra la solicitud, abre el mailto y muestra el aviso', async () => {
+    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue(null);
+    vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
+    vi.mocked(repo.choosePatientPlan).mockResolvedValue({} as never);
+    renderPage();
     const user = userEvent.setup();
-    vi.mocked(repo.choosePatientPlan).mockRejectedValue(Object.assign(new Error('Ya tienes una suscripción en curso.'), { name: 'AppError', code: 'YA_TIENES_SUSCRIPCION' }));
-    renderPage();
 
-    await user.click(await screen.findByRole('button', { name: 'Suscribirme' }));
+    await user.click(await screen.findByRole('button', { name: 'Contactar por correo para solicitar una suscripción' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Ya tienes una suscripción en curso.');
+    await waitFor(() => expect(repo.choosePatientPlan).toHaveBeenCalledWith('plan-seg'));
+    expect(await screen.findByText(/Tu solicitud quedó registrada/)).toBeInTheDocument();
+    const href = window.location.href;
+    expect(href.startsWith('mailto:admin%40vitgo.test?')).toBe(true);
+    expect(decodeURIComponent(href)).toContain('subject=Solicitud de suscripción Seguimiento mensual');
+    expect(decodeURIComponent(href)).toContain('Nombre: Ana Pérez');
   });
 
-  it('pendiente: muestra la factura y reportar el comprobante llama a reportInvoicePaid', async () => {
+  it('si la solicitud falla, el correo se abre igual y se muestra el error', async () => {
+    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue(null);
+    vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
+    const fallo = new Error('Sin conexión');
+    fallo.name = 'AppError';
+    vi.mocked(repo.choosePatientPlan).mockRejectedValue(fallo);
+    renderPage();
     const user = userEvent.setup();
-    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'pendiente',
-      current_period_end: null, created_at: '2026-11-21',
-    } satisfies PatientSubscription);
-    vi.mocked(repo.listMyInvoices).mockResolvedValue([FACTURA]);
-    vi.mocked(repo.reportInvoicePaid).mockResolvedValue(undefined);
-    renderPage();
 
-    expect(await screen.findByText('Suscripción Seguimiento mensual')).toBeInTheDocument();
-    await user.type(screen.getByLabelText('Número de comprobante'), 'TRX123456');
-    await user.click(screen.getByRole('button', { name: 'Informar pago' }));
+    await user.click(await screen.findByRole('button', { name: 'Contactar por correo para solicitar una suscripción' }));
 
-    await waitFor(() => expect(repo.reportInvoicePaid).toHaveBeenCalledWith('inv1', 'TRX123456'));
-    expect(await screen.findByText(/Comprobante informado/)).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sin conexión');
+    expect(window.location.href.startsWith('mailto:')).toBe(true);
   });
 
-  it('activa: muestra hasta cuándo y no ofrece planes', async () => {
-    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
-      current_period_end: '2026-12-21', created_at: '2026-11-21',
-    });
+  it('activa muestra el saldo «Te quedan 7 de 10» y deja el botón para renovar', async () => {
+    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue(ACTIVA);
+    vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
+    const saldo: RecipeBalance = { left: 7, quota: 10, period_end: '2099-01-15T00:00:00Z' };
+    vi.mocked(repo.getRecipeBalance).mockResolvedValue(saldo);
     renderPage();
 
-    expect(await screen.findByText(/activa hasta el 21 de diciembre de 2026/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Suscribirme' })).not.toBeInTheDocument();
-  });
-
-  it('activa con fecha fin con hora: muestra la fecha legible, nunca «Invalid Date»', async () => {
-    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
-      current_period_end: '2099-12-21T15:00:00+00:00', created_at: '2026-11-21',
-    });
-    renderPage();
-
-    expect(await screen.findByText('Tu suscripción está activa hasta el 21 de diciembre de 2099.')).toBeInTheDocument();
-    expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument();
-  });
-
-  it('vencida: muestra el aviso y «Suscribirme» llama a choosePatientPlan', async () => {
-    const user = userEvent.setup();
-    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'vencida',
-      current_period_end: '2020-10-21T15:00:00+00:00', created_at: '2026-09-21',
-    });
-    vi.mocked(repo.choosePatientPlan).mockResolvedValue(FACTURA);
-    renderPage();
-
-    expect(await screen.findByText('Tu suscripción venció el 21 de octubre de 2020.')).toBeInTheDocument();
-    expect(screen.queryByText(/activa hasta/)).not.toBeInTheDocument();
-    await user.click(await screen.findByRole('button', { name: 'Suscribirme' }));
-
-    await waitFor(() => expect(repo.choosePatientPlan).toHaveBeenCalledWith('p1'));
-    expect(await screen.findByText(/Te enviaremos los datos de la cuenta por correo/)).toBeInTheDocument();
-  });
-
-  it('activa con fecha pasada se trata como vencida', async () => {
-    vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
-      current_period_end: '2020-10-21T15:00:00+00:00', created_at: '2026-09-21',
-    });
-    renderPage();
-
-    expect(await screen.findByText('Tu suscripción venció el 21 de octubre de 2020.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Suscribirme' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Ver mi agenda' })).not.toBeInTheDocument();
-  });
-
-  it('formatDateTimeLong convierte un timestamp completo y rechaza texto inválido', () => {
-    expect(formatDateTimeLong('2026-12-21T15:00:00+00:00')).toBe('21 de diciembre de 2026');
-    expect(formatDateTimeLong('no es fecha')).toBe('');
-  });
-
-  it('fase 2 apagada: muestra Próximamente y no carga datos', async () => {
-    vi.mocked(usePhase).mockReturnValue(false);
-    renderPage();
-
-    expect(await screen.findByTestId('fase-2-bloqueada')).toBeInTheDocument();
-    expect(screen.getByText('Próximamente')).toBeInTheDocument();
-    expect(repo.listPatientPlans).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Te quedan 7 de 10 recetas/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Contactar por correo para solicitar una suscripción' })).toBeInTheDocument();
   });
 
   it('error al cargar muestra Reintentar y vuelve a cargar', async () => {
-    const user = userEvent.setup();
-    vi.mocked(repo.listPatientPlans).mockRejectedValueOnce(new Error('caída'));
+    vi.mocked(repo.getMyPatientSubscription).mockRejectedValueOnce(new Error('Falla de red'));
+    vi.mocked(repo.getMyPatientSubscription).mockResolvedValueOnce(null);
+    vi.mocked(repo.listPatientPlans).mockResolvedValue([PLAN]);
     renderPage();
+    const user = userEvent.setup();
 
-    expect(await screen.findByRole('alert')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await user.click(await screen.findByRole('button', { name: 'Reintentar' }));
+
     expect(await screen.findByText('Seguimiento mensual')).toBeInTheDocument();
   });
 
-  it('«Volver a Hoy» lleva a /mi-plan/hoy', async () => {
-    const user = userEvent.setup();
+  it('muestra un aviso de carga mientras llegan los datos', () => {
+    vi.mocked(repo.getMyPatientSubscription).mockReturnValue(new Promise(() => {}));
+    vi.mocked(repo.listPatientPlans).mockReturnValue(new Promise(() => {}));
     renderPage();
-
-    await user.click(await screen.findByRole('link', { name: 'Volver a Hoy' }));
-    expect(await screen.findByText('PANTALLA HOY')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando tu suscripción');
   });
 });

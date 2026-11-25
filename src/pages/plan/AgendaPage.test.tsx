@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   setTrialItemDone: vi.fn(),
   getMyPatientSubscription: vi.fn(),
   listPlanDays: vi.fn(),
+  listMyPrescriptions: vi.fn(),
   phase2: { on: true },
 }));
 
@@ -18,6 +19,7 @@ vi.mock('../../data', () => ({
     setTrialItemDone: mocks.setTrialItemDone,
     getMyPatientSubscription: mocks.getMyPatientSubscription,
     listPlanDays: mocks.listPlanDays,
+    listMyPrescriptions: mocks.listMyPrescriptions,
   },
 }));
 
@@ -80,6 +82,7 @@ beforeEach(() => {
   mocks.setTrialItemDone.mockReset();
   mocks.getMyPatientSubscription.mockReset().mockResolvedValue(null);
   mocks.listPlanDays.mockReset().mockResolvedValue([]);
+  mocks.listMyPrescriptions.mockReset().mockResolvedValue([]);
 });
 
 describe('AgendaPage', () => {
@@ -165,5 +168,34 @@ describe('AgendaPage', () => {
     renderAgenda();
     fireEvent.click(await screen.findByRole('button', { name: 'Reintentar' }));
     expect(await screen.findByText('Avena con fruta')).toBeInTheDocument();
+  });
+});
+
+describe('AgendaPage con recetas (sin semana gratis ni suscripción)', () => {
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+
+  it('muestra el día de la receta aunque no haya semana gratis ni suscripción', async () => {
+    mocks.getMyTrial.mockResolvedValue(null);
+    mocks.getMyPatientSubscription.mockResolvedValue(null);
+    mocks.listPlanDays.mockResolvedValue([
+      { id: 'pd1', patient_id: 'pac-1', nutritionist_id: 'nut-1', day: hoy, title: 'Día de receta', meals: 'Almuerzo: pollo', exercise: null, notes: null, done_at: null, patient_note: null, prescription_id: 'rx-1', created_at: '2026-11-21', updated_at: '2026-11-21' } as PlanDay,
+    ]);
+    render(<MemoryRouter><AgendaPage /></MemoryRouter>);
+
+    expect(await screen.findByText('Día de receta')).toBeInTheDocument();
+    expect(screen.getByText('Almuerzo: pollo')).toBeInTheDocument();
+  });
+
+  it('sin semana, sin suscripción y sin recetas muestra un estado vacío con salida', async () => {
+    mocks.getMyTrial.mockResolvedValue(null);
+    mocks.getMyPatientSubscription.mockResolvedValue(null);
+    mocks.listPlanDays.mockResolvedValue([]);
+    render(<MemoryRouter><AgendaPage /></MemoryRouter>);
+
+    // Aparece en el día (Agenda) y en «Mis recetas»: ambos con salida a Hoy.
+    expect((await screen.findAllByText('Aún no tienes recetas')).length).toBeGreaterThanOrEqual(1);
+    const salidas = screen.getAllByRole('link', { name: 'Ir a Hoy' });
+    expect(salidas.length).toBeGreaterThanOrEqual(1);
+    expect(salidas[0]).toHaveAttribute('href', '/mi-plan/hoy');
   });
 });

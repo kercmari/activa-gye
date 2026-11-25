@@ -4,6 +4,7 @@ import { repo, type DailyCheckin, type Trial } from '../../data';
 import { usePhase } from '../../auth/SettingsContext';
 import { CheckinCard } from '../../components/plan/CheckinCard';
 import { TrialItemRow } from '../../components/plan/TrialItemRow';
+import { RecetaDeHoy } from '../../components/plan/RecetasPaciente';
 import { useTrial } from '../../components/plan/useTrial';
 import { Button, LinkButton } from '../../components/ui/Button';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../../components/ui/States';
@@ -38,8 +39,18 @@ function fechaLarga(iso: string): string {
   return new Date(y, m - 1, d, 12).toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-/** Hoy (Hoy de Mi plan): semana gratis, ítems del día, chequeo y qué falta para abrir el siguiente día. */
+/** Hoy (Hoy de Mi plan): receta del día (fase 2), semana gratis, ítems del día, chequeo y qué falta para abrir el siguiente día. */
 export default function HoyPage() {
+  const phase2 = usePhase(2);
+  return (
+    <div className="space-y-6">
+      {phase2 ? <RecetaDeHoy /> : null}
+      <SemanaHoy />
+    </div>
+  );
+}
+
+function SemanaHoy() {
   const semana = useTrial();
   const [checkin, setCheckin] = useState<DailyCheckin | null>(null);
   const [checkinError, setCheckinError] = useState<string | null>(null);

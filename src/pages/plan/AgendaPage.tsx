@@ -8,6 +8,8 @@ import { useTrial } from '../../components/plan/useTrial';
 import MonthCalendar from '../../components/plan/MonthCalendar';
 import DayActivities from '../../components/plan/DayActivities';
 import Paywall from '../../components/plan/Paywall';
+import { MisRecetas, PlanDayCard } from '../../components/plan/RecetasPaciente';
+import { todayGuayaquil } from '../../components/plan/fechasPlan';
 import PageHeader from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
 import { EmptyState, ErrorState, Loading, errorMessage } from '../../components/ui/States';
@@ -33,11 +35,6 @@ function addDays(s: string, n: number): string {
 function longDate(s: string): string {
   const d = fromIso(s);
   return `${DIAS_SEMANA[(d.getUTCDay() + 6) % 7]}, ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
-}
-
-/** Hoy en Guayaquil, como 'AAAA-MM-DD'. Solo se usa si todavía no hay semana cargada. */
-function todayGuayaquil(): string {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Guayaquil', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 }
 
 /** Último día del mes `key` ('AAAA-MM'). */
@@ -81,9 +78,10 @@ export default function AgendaPage() {
   const sub = useAsync(() => (phase2 ? repo.getMyPatientSubscription() : Promise.resolve(null)), [phase2]);
   const subActive = sub.status === 'ok' && sub.data?.status === 'activa';
   const myId = session?.user.id ?? null;
+  // Los días de las recetas entregadas se ven con fase 2, tenga o no semana gratis o suscripción activa.
   const planDays = useAsync<PlanDay[]>(
-    () => (phase2 && subActive && myId ? repo.listPlanDays(myId, `${monthKey}-01`, lastDayOf(monthKey)) : Promise.resolve([])),
-    [phase2, subActive, myId, monthKey],
+    () => (phase2 && myId ? repo.listPlanDays(myId, `${monthKey}-01`, lastDayOf(monthKey)) : Promise.resolve([])),
+    [phase2, myId, monthKey],
   );
 
   const entries = trial ? trialEntries(trial) : [];
@@ -134,6 +132,17 @@ export default function AgendaPage() {
   function renderDay() {
     if (!trial) {
       if (plan) return <PlanDayCard plan={plan} />;
+      if (phase2) {
+        if (planDays.status === 'loading') return <Loading text="Cargando tu plan…" />;
+        if (planDays.status === 'error') return <ErrorState message={planDays.message} onRetry={planDays.reload} />;
+        return (
+          <EmptyState
+            title="Aún no tienes recetas"
+            text="Cuando tu nutricionista te entregue una receta, sus días aparecerán aquí."
+            action={{ label: 'Ir a Hoy', to: '/mi-plan/hoy' }}
+          />
+        );
+      }
       return (
         <EmptyState
           title="Aún no tienes tu semana gratis"
@@ -210,27 +219,12 @@ export default function AgendaPage() {
             </div>
           </div>
         )}
+        {phase2 ? (
+          <div className="mt-8">
+            <MisRecetas />
+          </div>
+        ) : null}
       </section>
     </>
-  );
-}
-
-function PlanDayCard({ plan }: { plan: PlanDay }) {
-  return (
-    <article className="space-y-4">
-      <h3 className="text-lg font-bold text-navy-900">{plan.title}</h3>
-      {plan.meals ? (
-        <div>
-          <p className="eyebrow text-brand-orange">Comidas</p>
-          <p className="mt-1 whitespace-pre-line text-slate-700">{plan.meals}</p>
-        </div>
-      ) : null}
-      {plan.exercise ? (
-        <div>
-          <p className="eyebrow text-brand-orange">Ejercicio</p>
-          <p className="mt-1 whitespace-pre-line text-slate-700">{plan.exercise}</p>
-        </div>
-      ) : null}
-    </article>
   );
 }
