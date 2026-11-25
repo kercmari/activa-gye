@@ -66,6 +66,7 @@ Deno.serve(async (req) => {
   }
   // Sin saltos de línea ni caracteres de control en el asunto.
   const title = input.title.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+  if (!title) return json({ error: 'Faltan user_id o title' }, 400);
   const body = typeof input.body === 'string' && input.body.trim() ? input.body.trim() : null;
   const isContact = input.kind === 'contacto';
   const rawLink = typeof input.link === 'string' && input.link.trim() ? input.link.trim() : null;

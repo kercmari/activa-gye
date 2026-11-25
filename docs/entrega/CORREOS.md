@@ -71,9 +71,9 @@ Notas:
 2. Haz que un usuario reciba un aviso (por ejemplo, un nutricionista acepta una solicitud).
 3. Revisa el correo del usuario. Si no llega, mira *Logs* de la función `enviar-correo` en el panel
    de Supabase: la respuesta indica el motivo (`sin_clave`, `fase_apagada`, `sin_correo`, `sin_remitente`, `error_configuracion`, `brevo_error`).
+4. En Brevo, *Statistics → Transactional → Logs*, revisa si el correo salió y si rebotó.
 5. Para el contacto: con la fase 3 apagada, envía el formulario de *Contacto* sin iniciar sesión y
    revisa que llegue el correo «Nuevo mensaje de contacto» a cada administradora.
-4. En Brevo, *Statistics → Transactional → Logs*, revisa si el correo salió y si rebotó.
 
 Mientras no haya clave de Brevo, la función responde `{ "sent": false, "reason": "sin_clave" }` y no envía nada.
 
