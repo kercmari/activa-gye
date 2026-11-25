@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useSettings } from '../auth/SettingsContext';
 import AuthShell from '../components/profile/AuthShell';
 import AvatarField from '../components/profile/AvatarField';
+import CorreoEnviado from '../components/profile/CorreoEnviado';
 import PasswordField from '../components/profile/PasswordField';
 import { ageFrom, todayISO } from '../components/profile/labels';
 import { buttonClasses } from '../components/ui/Button';
@@ -75,6 +76,7 @@ export default function RegistroPage() {
   const [foto, setFoto] = useState<File | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [serverError, setServerError] = useState<string | null>(null);
+  const [yaExiste, setYaExiste] = useState(false);
   const [confirmar, setConfirmar] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -86,6 +88,7 @@ export default function RegistroPage() {
     const found = validateRegistro(values, foto);
     setErrors(found);
     setServerError(null);
+    setYaExiste(false);
     if (Object.keys(found).length > 0 || !foto) return;
     setBusy(true);
     try {
@@ -105,6 +108,7 @@ export default function RegistroPage() {
       if (error instanceof AppError && error.code === 'CORREO_SIN_CONFIRMAR') {
         setConfirmar(errorMessage(error));
       } else {
+        setYaExiste(error instanceof AppError && error.code === 'CORREO_EN_USO');
         setServerError(errorMessage(error));
       }
       setBusy(false);
@@ -116,9 +120,8 @@ export default function RegistroPage() {
   if (confirmar) {
     return (
       <AuthShell title="Revisa tu correo" subtitle="Tu cuenta ya está creada.">
-        <div role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
-          {confirmar}
-        </div>
+        <CorreoEnviado email={values.email.trim().toLowerCase()} que="un enlace para confirmar tu cuenta" reenviar />
+        <p className="mt-3 text-sm text-slate-600">Abre el enlace del correo y luego inicia sesión.</p>
         <Link
           to="/ingresar"
           className={buttonClasses({ variant: 'primary', size: 'lg' }, 'mt-6 w-full')}
@@ -271,6 +274,12 @@ export default function RegistroPage() {
         {serverError ? (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
             {serverError}
+            {yaExiste ? (
+              <span className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                <Link to="/ingresar" className="text-brand-blue underline">Ingresar</Link>
+                <Link to="/recuperar" className="text-brand-blue underline">¿Olvidaste tu contraseña?</Link>
+              </span>
+            ) : null}
           </p>
         ) : null}
 

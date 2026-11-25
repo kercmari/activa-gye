@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
-import { repo } from '../data';
+import { repo, usingSupabase } from '../data';
 import AuthShell from '../components/profile/AuthShell';
+import CorreoEnviado from '../components/profile/CorreoEnviado';
 import { buttonClasses } from '../components/ui/Button';
 import { TextField } from '../components/ui/Field';
 import { errorMessage } from '../components/ui/States';
@@ -37,10 +38,11 @@ export default function RecuperarPage() {
   return (
     <AuthShell title="Recuperar contraseña" subtitle="Escribe el correo de tu cuenta.">
       {enviado ? (
-        <div role="status" className="flex flex-col gap-6">
-          <p className="rounded-2xl bg-emerald-50 px-5 py-4 font-semibold text-emerald-800">
-            Si el correo está registrado, te enviaremos un enlace para crear una nueva contraseña.
-          </p>
+        <div className="flex flex-col gap-6">
+          <CorreoEnviado
+            email={email.trim().toLowerCase()}
+            que="un enlace para crear una nueva contraseña (si ese correo tiene cuenta)"
+          />
           <Link to="/ingresar" className={buttonClasses({ variant: 'secondary' }, 'w-full')}>
             Volver a ingresar
           </Link>
@@ -66,7 +68,7 @@ export default function RecuperarPage() {
           </p>
         </form>
       )}
-      <p className="mt-6 text-xs text-slate-500">En la versión de prueba no se envían correos.</p>
+      {usingSupabase ? null : <p className="mt-6 text-xs text-slate-500">En la versión de prueba no se envían correos.</p>}
     </AuthShell>
   );
 }

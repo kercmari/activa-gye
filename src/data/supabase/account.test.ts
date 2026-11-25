@@ -125,6 +125,11 @@ describe('adminSaveSettings', () => {
 });
 
 describe('signUp', () => {
+  it('correo que ya tiene cuenta (usuario sin identidades) lanza CORREO_EN_USO y no pide revisar el correo', async () => {
+    sb.auth.signUp.mockResolvedValueOnce({ data: { user: { id: 'x', email: 'ana@ejemplo.com', identities: [] }, session: null }, error: null });
+    await expect(signUp(SIGNUP)).rejects.toMatchObject({ code: 'CORREO_EN_USO', message: expect.stringContaining('ingresa con tus credenciales') });
+  });
+
   it('con el cupo lleno lanza CUPO_LLENO sin llamar a auth.signUp', async () => {
     sb.rpc.mockResolvedValue(CUPO_LLENO_RES);
 

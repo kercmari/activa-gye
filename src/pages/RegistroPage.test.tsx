@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -16,7 +16,7 @@ vi.mock('../auth/SettingsContext', () => ({
 }));
 
 vi.mock('../data', () => ({
-  repo: { getSession: vi.fn(), onAuthChange: vi.fn(() => () => {}), signUp: vi.fn() },
+  repo: { getSession: vi.fn(), onAuthChange: vi.fn(() => () => {}), signUp: vi.fn(), resendSignupConfirmation: vi.fn(async () => {}) },
 }));
 
 const SESSION: Session = {
@@ -159,8 +159,23 @@ describe('RegistroPage', () => {
     await subirFoto(user);
     await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
     await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
-    expect(await screen.findByRole('status')).toHaveTextContent('Revisa tu correo para confirmar la cuenta');
+    expect(await screen.findByRole('status')).toHaveTextContent('Te enviamos un enlace para confirmar tu cuenta a ana@correo.com');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ir a ingresar' })).toHaveAttribute('href', '/ingresar');
+    expect(screen.getByRole('button', { name: 'Reenviar correo' })).toBeInTheDocument();
+  });
+
+  it('CORREO_EN_USO dice que ya existe la cuenta y ofrece ingresar o recuperar la contraseña', async () => {
+    vi.mocked(repo.signUp).mockRejectedValue(new AppError('CORREO_EN_USO', 'Ya existe una cuenta con este correo. Por favor ingresa con tus credenciales.'));
+    const user = userEvent.setup();
+    renderPage();
+    await fillBase(user, 'Clave-segura-1');
+    await subirFoto(user);
+    await user.click(screen.getByLabelText('Acepto los términos y la política de privacidad'));
+    await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
+    const alerta = await screen.findByRole('alert');
+    expect(alerta).toHaveTextContent('Ya existe una cuenta con este correo. Por favor ingresa con tus credenciales.');
+    expect(within(alerta).getByRole('link', { name: 'Ingresar' })).toHaveAttribute('href', '/ingresar');
+    expect(within(alerta).getByRole('link', { name: '¿Olvidaste tu contraseña?' })).toHaveAttribute('href', '/recuperar');
   });
 });

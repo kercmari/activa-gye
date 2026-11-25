@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { repo } from '../data';
 import { useAuth } from '../auth/AuthContext';
 import AuthShell from '../components/profile/AuthShell';
+import CorreoEnviado from '../components/profile/CorreoEnviado';
 import PasswordField from '../components/profile/PasswordField';
 import { safeInternalPath } from '../components/profile/paths';
 import { buttonClasses } from '../components/ui/Button';
@@ -98,9 +99,10 @@ export default function IngresarPage() {
           error={errors.password}
         />
         {aviso ? (
-          <p role="status" className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800">
-            {aviso}
-          </p>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-navy-900">Tu cuenta todavía no está confirmada.</p>
+            <CorreoEnviado email={email.trim().toLowerCase()} que="el enlace para confirmar tu cuenta" reenviar />
+          </div>
         ) : null}
         {serverError ? (
           <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">

@@ -17,7 +17,7 @@ import type {
 import { AppError } from '../types';
 import { downscaleToBlob } from '../../lib/image';
 import { supabase } from './client';
-import { toAppError, unwrap } from './errors';
+import { MENSAJES, toAppError, unwrap } from './errors';
 
 const SIN_SESION = 'Inicia sesión para continuar.';
 const DATOS_INVALIDOS = 'Revisa los datos e inténtalo de nuevo.';
@@ -229,6 +229,11 @@ export const accountPart: Partial<Repo> = {
       }
       throw toAppError(error);
     }
+    // Con confirmación por correo, Supabase no da error si el correo ya tiene cuenta:
+    // devuelve un usuario sin identidades y NO envía correo. Se avisa en vez de decir «revisa tu correo».
+    if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      throw new AppError('CORREO_EN_USO', MENSAJES.CORREO_EN_USO);
+    }
     if (!data.user || !data.session) {
       // Sin sesión (hay que confirmar el correo): la foto espera en este navegador hasta el primer ingreso.
       localStorage.setItem(fotoPendienteKey(email), await blobToDataUrl(foto));
@@ -258,6 +263,15 @@ export const accountPart: Partial<Repo> = {
   },
 
   signOut,
+
+  async resendSignupConfirmation(email: string) {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email.trim().toLowerCase(),
+      options: { emailRedirectTo: `${location.origin}/ingresar` },
+    });
+    if (error) throw toAppError(error);
+  },
 
   async requestPasswordReset(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {

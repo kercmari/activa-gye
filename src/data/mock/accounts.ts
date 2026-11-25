@@ -136,7 +136,7 @@ async function signUp(input: SignUpInput): Promise<Session> {
 
   const users = readTable<StoredUser>('users');
   if (users.some((u) => u.email === email)) {
-    throw new AppError('CORREO_EN_USO', 'Ya existe una cuenta con ese correo.');
+    throw new AppError('CORREO_EN_USO', 'Ya existe una cuenta con este correo. Por favor ingresa con tus credenciales.');
   }
 
   const id = crypto.randomUUID();
@@ -178,6 +178,11 @@ async function signOut(): Promise<void> {
   await wait();
   setSessionUserId(null);
   notifyAuth();
+}
+
+async function resendSignupConfirmation(_email: string): Promise<void> {
+  // En el simulador no se envía correo.
+  await wait();
 }
 
 async function requestPasswordReset(_email: string): Promise<void> {
@@ -425,6 +430,7 @@ export const accountsPart: Partial<Repo> = {
   signIn,
   signOut,
   requestPasswordReset,
+  resendSignupConfirmation,
   updateProfile,
   deleteMyAccount,
   uploadAvatar,

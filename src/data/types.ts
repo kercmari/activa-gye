@@ -630,6 +630,8 @@ export interface Repo {
   signIn(email: string, password: string): Promise<Session>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
+  /** Vuelve a enviar el correo de confirmación del registro. */
+  resendSignupConfirmation(email: string): Promise<void>;
   updateProfile(patch: ProfilePatch): Promise<Profile>;
   deleteMyAccount(): Promise<void>;
   /** Valida (FOTO_INVALIDA), reduce a lado 512 JPEG, sube a `avatars/<uid>/avatar.jpg` (reemplaza) y guarda `avatar_path`. */

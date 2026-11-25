@@ -9,7 +9,7 @@ import IngresarPage, { esBaseLocal } from './IngresarPage';
 
 vi.mock('../auth/AuthContext', () => ({ useAuth: vi.fn() }));
 vi.mock('../data', () => ({
-  repo: { signIn: vi.fn() },
+  repo: { signIn: vi.fn(), resendSignupConfirmation: vi.fn(async () => {}) },
 }));
 
 const SESSION: Session = {
@@ -74,8 +74,12 @@ describe('IngresarPage', () => {
     const user = userEvent.setup();
     renderAt('/ingresar');
     await fillAndSubmit(user);
-    expect(await screen.findByRole('status')).toHaveTextContent('Revisa tu correo para confirmar la cuenta');
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent('Te enviamos el enlace para confirmar tu cuenta a usuario@activagye.test');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Reenviar correo' }));
+    expect(repo.resendSignupConfirmation).toHaveBeenCalledWith('usuario@activagye.test');
+    expect(await screen.findByText('Listo: lo enviamos otra vez a usuario@activagye.test.')).toBeInTheDocument();
   });
 
   beforeEach(() => {

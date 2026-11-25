@@ -1,10 +1,10 @@
 /** Traduce errores de Supabase (Postgres, Auth y red) a AppError con mensaje en español (dueño: D1). */
 import { AppError } from '../types';
 
-const MENSAJES: Record<string, string> = {
+export const MENSAJES: Record<string, string> = {
   SIN_SESION: 'Inicia sesión para continuar.',
   CREDENCIALES: 'Correo o contraseña incorrectos.',
-  CORREO_EN_USO: 'Ya existe una cuenta con ese correo.',
+  CORREO_EN_USO: 'Ya existe una cuenta con este correo. Por favor ingresa con tus credenciales.',
   CORREO_SIN_CONFIRMAR: 'Revisa tu correo para confirmar la cuenta y luego inicia sesión.',
   MENOR_DE_16: 'Debes tener al menos 16 años para registrarte.',
   SOLO_ADMIN: 'Solo el administrador puede hacer esto.',
