@@ -157,3 +157,17 @@ describe('AdminSuscripcionesPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Factura ya pagada');
   });
 });
+
+describe('AdminSuscripcionesPage · listas sin desborde a 360 px', () => {
+  it('las listas de pendientes y activas son una columna y sus tarjetas pueden encogerse (RW1 BLOCKING 1)', async () => {
+    renderPage();
+    const pendiente = await screen.findByText('Ana Pérez');
+    const activa = await screen.findByText('Luis Soto');
+    const listaPendientes = pendiente.closest('li')!.parentElement!;
+    const listaActivas = activa.closest('li')!.parentElement!;
+    for (const lista of [listaPendientes, listaActivas]) {
+      expect(lista).toHaveClass('grid', 'grid-cols-1');
+      for (const li of Array.from(lista.children)) expect(li).toHaveClass('min-w-0');
+    }
+  });
+});

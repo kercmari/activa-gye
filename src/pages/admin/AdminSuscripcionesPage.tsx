@@ -89,9 +89,9 @@ export default function AdminSuscripcionesPage() {
                 />
               </div>
             ) : (
-              <ul className="mt-5 grid gap-4">
+              <ul className="mt-5 grid grid-cols-1 gap-4">
                 {state.data.pending.map((row) => (
-                  <li key={row.invoice_id} className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
+                  <li key={row.invoice_id} className="min-w-0 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
                     <Datos row={row} />
                     <p className="mt-2 text-xs text-slate-500">Solicitada el {formatDate(row.created_at)}</p>
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -121,9 +121,9 @@ export default function AdminSuscripcionesPage() {
                 <EmptyState title="No hay suscripciones activas" text="Las suscripciones aprobadas aparecerán aquí con su vencimiento." />
               </div>
             ) : (
-              <ul className="mt-5 grid gap-4">
+              <ul className="mt-5 grid grid-cols-1 gap-4">
                 {state.data.active.map((row) => (
-                  <li key={row.subscription_id} className="rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
+                  <li key={row.subscription_id} className="min-w-0 rounded-[1.75rem] bg-white p-6 shadow-xl shadow-navy-900/5">
                     <Datos row={row} />
                     <p className="mt-3 text-sm text-slate-700">
                       Vence el {formatDate(row.period_end)}

@@ -71,7 +71,7 @@ function PagosContent({ userId }: { userId: string }) {
         <p className="text-lg font-extrabold text-navy-900">{`Pendiente por pagar: ${formatMoney(pendiente)}`}</p>
         {invoices.some((inv) => inv.status === 'pendiente' && inv.kind !== 'suscripcion_paciente') ? (
           <p className="mt-2 text-sm text-slate-600">
-            Paga por transferencia a tu nutricionista y escribe aquí el número de comprobante. Él confirmará el pago.
+            Paga por transferencia a tu nutricionista y escribe aquí el número de comprobante. Tu nutricionista confirmará el pago.
           </p>
         ) : null}
       </div>
