@@ -1,4 +1,4 @@
-# Correos de aviso con Brevo (fase 3)
+# Correos de aviso con Brevo (fase 3 y formulario de contacto)
 
 Cada aviso de la campana (por ejemplo, «Nueva solicitud de atención») también se envía por correo
 cuando la fase 3 está encendida y Brevo está configurado. Si falta cualquiera de los dos, el aviso
@@ -7,7 +7,13 @@ igual queda en la campana y no se envía nada.
 **Formulario de contacto:** cada mensaje nuevo crea un aviso «Nuevo mensaje de contacto» para cada
 cuenta con rol administrador, y ese aviso se envía por correo con esta misma configuración. Estos
 correos salen aunque la fase 3 esté apagada (solo necesitan Brevo y el paso 3). El mensaje completo
-sigue en *Admin → Mensajes*.
+sigue en *Admin → Mensajes*. El asunto y el texto los escribe cualquier visitante: no abras enlaces
+sospechosos. Como mucho se envían 20 avisos de contacto por hora; si llegan más, se envía uno solo
+(«Llegaron muchos mensajes») y el resto se lee en *Admin → Mensajes*.
+
+**Al publicar la migración 17, vuelve a desplegar la función `enviar-correo` al mismo tiempo**
+(`npx supabase functions deploy enviar-correo`). Con la función vieja, los correos de contacto no
+salen mientras la fase 3 esté apagada.
 
 Piezas:
 - `supabase/functions/enviar-correo/index.ts`: la Edge Function que envía el correo con la API de Brevo.
@@ -64,13 +70,16 @@ Notas:
 1. En *Admin → Fases*, enciende la fase 3.
 2. Haz que un usuario reciba un aviso (por ejemplo, un nutricionista acepta una solicitud).
 3. Revisa el correo del usuario. Si no llega, mira *Logs* de la función `enviar-correo` en el panel
-   de Supabase: la respuesta indica el motivo (`sin_clave`, `fase_apagada`, `sin_remitente`, `brevo_error`).
+   de Supabase: la respuesta indica el motivo (`sin_clave`, `fase_apagada`, `sin_correo`, `sin_remitente`, `error_configuracion`, `brevo_error`).
+5. Para el contacto: con la fase 3 apagada, envía el formulario de *Contacto* sin iniciar sesión y
+   revisa que llegue el correo «Nuevo mensaje de contacto» a cada administradora.
 4. En Brevo, *Statistics → Transactional → Logs*, revisa si el correo salió y si rebotó.
 
 Mientras no haya clave de Brevo, la función responde `{ "sent": false, "reason": "sin_clave" }` y no envía nada.
 
 ## Límites
 
-- 300 correos por día en el plan gratis de Brevo. Cada aviso es un correo.
+- 300 correos por día en el plan gratis de Brevo. Cada aviso es un correo; cada mensaje de contacto
+  es un correo por administradora (como mucho 20 mensajes por hora).
 - El envío es asíncrono: el correo puede llegar unos segundos después del aviso.
 - Si el correo falla, el aviso igual queda en la campana. No hay reintentos automáticos.

@@ -1,4 +1,4 @@
-// Edge Function: envía un correo de aviso con Brevo (fase 3).
+// Edge Function: envía un correo de aviso con Brevo (fase 3, y los de contacto siempre).
 // La llama el trigger de `notifications` (migración 20261121000005) con la clave de servicio.
 // Los avisos de contacto (kind 'contacto', migración 20261125000017) van a las administradoras
 // aunque la fase 3 esté apagada.
@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
   if (typeof input.user_id !== 'string' || typeof input.title !== 'string' || !input.title.trim()) {
     return json({ error: 'Faltan user_id o title' }, 400);
   }
-  const title = input.title.trim();
+  // Sin saltos de línea ni caracteres de control en el asunto.
+  const title = input.title.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
   const body = typeof input.body === 'string' && input.body.trim() ? input.body.trim() : null;
   const isContact = input.kind === 'contacto';
   const rawLink = typeof input.link === 'string' && input.link.trim() ? input.link.trim() : null;
@@ -78,10 +79,12 @@ Deno.serve(async (req) => {
   });
 
   // Solo se envía si la fase 3 está encendida (salvo los avisos de contacto).
-  const { data: settings, error: settingsError } = await admin.rpc('get_public_settings');
-  if (settingsError) return json({ sent: false, reason: 'error_configuracion' }, 500);
-  if (!isContact && !(settings as { phase3?: boolean } | null)?.phase3) {
-    return json({ sent: false, reason: 'fase_apagada' });
+  if (!isContact) {
+    const { data: settings, error: settingsError } = await admin.rpc('get_public_settings');
+    if (settingsError) return json({ sent: false, reason: 'error_configuracion' }, 500);
+    if (!(settings as { phase3?: boolean } | null)?.phase3) {
+      return json({ sent: false, reason: 'fase_apagada' });
+    }
   }
 
   const { data: userData, error: userError } = await admin.auth.admin.getUserById(input.user_id);
