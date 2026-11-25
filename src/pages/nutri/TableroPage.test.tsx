@@ -34,6 +34,8 @@ const DASHBOARD: NutriDashboard = {
   week_days_done: 4,
   pending_invoices: 1,
   subscription: ACTIVA,
+  limits: { plan_name: 'Starter', patient_quota: 15, daily_record_limit: 60, patients_used: 2, records_today: 0 },
+  recipes_week: 0,
 };
 
 const PACIENTE: PatientSummary = {
@@ -46,6 +48,8 @@ const PACIENTE: PatientSummary = {
   days_total: 7,
   days_done: 5,
   last_followup_date: null,
+  origin: 'plataforma',
+  recipes_left: null,
 };
 
 function renderPage() {

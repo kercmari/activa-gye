@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { repo, type AppSettings } from '../data';
 
 /** Mientras carga (o si falla) se asume solo la fase 1: nunca se muestra de más. */
-export const DEFAULT_SETTINGS: AppSettings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 0 };
+export const DEFAULT_SETTINGS: AppSettings = { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 0, admin_email: 'kerlyeliz19@gmail.com', free_patient_limit: 3, free_daily_record_limit: 10 };
 
 type SettingsState = { settings: AppSettings; loading: boolean; reload: () => Promise<void> };
 const Ctx = createContext<SettingsState>({ settings: DEFAULT_SETTINGS, loading: true, reload: async () => {} });

@@ -130,7 +130,7 @@ describe('AgendaPage', () => {
     mocks.getMyPatientSubscription.mockResolvedValue({ id: 's1', plan_id: 'p', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'activa', current_period_end: null, created_at: '2026-11-21' });
     const plan: PlanDay = {
       id: 'd8', patient_id: 'pac-1', nutritionist_id: 'nut-1', day: '2026-11-28', title: 'Semana 2: fuerza',
-      meals: 'Ensalada de quinoa', exercise: 'Sentadillas 3x10', notes: null, done_at: null, patient_note: null,
+      meals: 'Ensalada de quinoa', exercise: 'Sentadillas 3x10', notes: null, done_at: null, patient_note: null, prescription_id: null,
       created_at: '2026-11-21', updated_at: '2026-11-21',
     };
     mocks.listPlanDays.mockResolvedValue([plan]);

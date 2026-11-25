@@ -21,6 +21,7 @@ function plan(day: string, overrides: Partial<PlanDay> = {}): PlanDay {
   return {
     id: `p-${day}`,
     patient_id: 'pac1',
+    prescription_id: null,
     nutritionist_id: 'nut1',
     day,
     title: 'Día de prueba',
@@ -80,6 +81,7 @@ describe('PlanEditor', () => {
       meals: 'Avena',
       exercise: null,
       notes: null,
+      prescription_id: '', // provisional hasta UN2
     });
   });
 
@@ -94,7 +96,7 @@ describe('PlanEditor', () => {
     await user.click(screen.getByRole('button', { name: 'Copiar esta semana a la siguiente' }));
 
     await waitFor(() => expect(repo.copyPlanWeek).toHaveBeenCalledTimes(1));
-    expect(repo.copyPlanWeek).toHaveBeenCalledWith('pac1', MONDAY, addDays(MONDAY, 7));
+    expect(repo.copyPlanWeek).toHaveBeenCalledWith('pac1', MONDAY, addDays(MONDAY, 7), ''); // provisional hasta UN2
     expect(await screen.findByText('Se copiaron 3 días.')).toBeInTheDocument();
     // Pasa a la semana siguiente: vuelve a pedir los días de ese rango.
     await waitFor(() =>

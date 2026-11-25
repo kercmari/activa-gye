@@ -87,14 +87,20 @@ beforeEach(() => {
 describe('getSettings', () => {
   it('llama rpc(get_public_settings) y devuelve sus campos', async () => {
     sb.rpc.mockResolvedValue({
-      data: { phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2 },
+      data: {
+        phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2,
+        admin_email: 'kerlyeliz19@gmail.com', free_patient_limit: 3, free_daily_record_limit: 10,
+      },
       error: null,
     });
 
     const s = await getSettings();
 
     expect(sb.rpc).toHaveBeenCalledWith('get_public_settings');
-    expect(s).toEqual({ phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2 });
+    expect(s).toEqual({
+      phase1: true, phase2: false, phase3: false, patient_limit: 5, patients_count: 2,
+      admin_email: 'kerlyeliz19@gmail.com', free_patient_limit: 3, free_daily_record_limit: 10,
+    });
   });
 });
 

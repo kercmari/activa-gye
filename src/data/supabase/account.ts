@@ -108,6 +108,9 @@ interface SettingsRow {
   phase3: boolean;
   patient_limit: number;
   patients_count: number;
+  admin_email: string;
+  free_patient_limit: number;
+  free_daily_record_limit: number;
 }
 
 function rowToSettings(row: SettingsRow): AppSettings {
@@ -117,6 +120,9 @@ function rowToSettings(row: SettingsRow): AppSettings {
     phase3: Boolean(row.phase3),
     patient_limit: Number(row.patient_limit),
     patients_count: Number(row.patients_count),
+    admin_email: row.admin_email ?? '',
+    free_patient_limit: Number(row.free_patient_limit ?? 0),
+    free_daily_record_limit: Number(row.free_daily_record_limit ?? 0),
   };
 }
 
@@ -125,7 +131,7 @@ function sinUndefined<T extends object>(obj: T): Partial<T> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as Partial<T>;
 }
 
-async function getSettings(): Promise<AppSettings> {
+export async function getSettings(): Promise<AppSettings> {
   const row = unwrap(await supabase.rpc('get_public_settings')) as SettingsRow;
   return rowToSettings(row);
 }

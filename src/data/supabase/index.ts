@@ -14,5 +14,13 @@ import { catalogPart } from './catalog';
 import { carePart } from './care';
 import { planPart } from './plan';
 import { trialPart } from './trial';
+import { recetasPart } from './recetas';
 
-export const supabaseRepo: Repo = withFallback({ ...catalogPart, ...accountPart, ...carePart, ...planPart, ...trialPart });
+export const supabaseRepo: Repo = withFallback({
+  ...catalogPart,
+  ...accountPart,
+  ...carePart,
+  ...planPart,
+  ...trialPart,
+  ...recetasPart,
+});

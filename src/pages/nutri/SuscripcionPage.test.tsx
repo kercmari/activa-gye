@@ -28,8 +28,8 @@ const SESSION: Session = {
 };
 
 const PLANES: SubscriptionPlan[] = [
-  { id: 'p1', name: 'Inicial', monthly_price: 20, patient_quota: 10, active: true, sort: 1 },
-  { id: 'p2', name: 'Pro', monthly_price: 45.5, patient_quota: 30, active: true, sort: 2 },
+  { id: 'p1', name: 'Inicial', monthly_price: 20, patient_quota: 10, active: true, sort: 1, daily_record_limit: null, recipe_quota: null, features: [] },
+  { id: 'p2', name: 'Pro', monthly_price: 45.5, patient_quota: 30, active: true, sort: 2, daily_record_limit: null, recipe_quota: null, features: [] },
 ];
 
 const FACTURA_PENDIENTE: Invoice = {
