@@ -10,6 +10,12 @@ describe('toAppError', () => {
     expect(e.message).toBe('Por ahora no hay cupos para nuevos pacientes. Inténtalo más adelante.');
   });
 
+  it('traduce el límite de correos de Supabase a ESPERA_CORREO', () => {
+    for (const message of ['For security purposes, you can only request this after 42 seconds.', 'Email rate limit exceeded']) {
+      expect(toAppError({ message }).code).toBe('ESPERA_CORREO');
+    }
+  });
+
   it('traduce las credenciales incorrectas', () => {
     const e = toAppError({ message: 'Invalid login credentials' });
     expect(e.code).toBe('CREDENCIALES');

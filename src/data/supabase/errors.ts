@@ -19,6 +19,7 @@ export const MENSAJES: Record<string, string> = {
   DATOS_INVALIDOS: 'Revisa los datos e inténtalo de nuevo.',
   NO_PUEDES_CAMBIAR_TU_ROL: 'No puedes cambiar tu propio rol.',
   CUENTA_NO_EXISTE: 'No encontramos esa cuenta.',
+  ESPERA_CORREO: 'Ya enviamos un correo hace poco. Espera un minuto antes de pedir otro.',
   ADMIN_NO_PERMITIDO: 'Ese correo no está en la lista de administradores permitidos.',
   ROL_PROTEGIDO: 'No puedes cambiar tu rol desde aquí.',
   CUPO_LLENO: 'Por ahora no hay cupos para nuevos pacientes. Inténtalo más adelante.',
@@ -63,6 +64,7 @@ export function toAppError(e: unknown): AppError {
 
   if (MENSAJES[message]) return new AppError(message, MENSAJES[message]);
   if (message === 'Invalid login credentials') return new AppError('CREDENCIALES', MENSAJES.CREDENCIALES);
+  if (/rate limit|only request this after|over_email_send_rate_limit/i.test(message)) return new AppError('ESPERA_CORREO', MENSAJES.ESPERA_CORREO);
   if (message === 'User already registered') return new AppError('CORREO_EN_USO', MENSAJES.CORREO_EN_USO);
   if (/jwt|auth session missing|sin sesión/i.test(message)) return new AppError('SIN_SESION', MENSAJES.SIN_SESION);
   if (RED_PATRON.test(message)) return new AppError('RED', MENSAJES.RED);

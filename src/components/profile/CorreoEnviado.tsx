@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { repo } from '../../data';
 import { errorMessage } from '../ui/States';
 
@@ -15,6 +15,13 @@ interface Props {
 export default function CorreoEnviado({ email, que, reenviar = false }: Props) {
   const [estado, setEstado] = useState<'listo' | 'enviando' | 'reenviado'>('listo');
   const [error, setError] = useState<string | null>(null);
+  // Supabase permite un correo por minuto: el botón espera 60 s después de cada envío.
+  const [espera, setEspera] = useState(0);
+  useEffect(() => {
+    if (espera <= 0) return;
+    const t = setTimeout(() => setEspera((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [espera]);
 
   const otraVez = async () => {
     setError(null);
@@ -22,6 +29,7 @@ export default function CorreoEnviado({ email, que, reenviar = false }: Props) {
     try {
       await repo.resendSignupConfirmation(email);
       setEstado('reenviado');
+      setEspera(60);
     } catch (err) {
       setError(errorMessage(err));
       setEstado('listo');
@@ -39,10 +47,10 @@ export default function CorreoEnviado({ email, que, reenviar = false }: Props) {
           <button
             type="button"
             onClick={otraVez}
-            disabled={estado === 'enviando'}
+            disabled={estado === 'enviando' || espera > 0}
             className="min-h-11 self-start rounded-full border border-blue-300 bg-white px-4 font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-60"
           >
-            {estado === 'enviando' ? 'Reenviando…' : 'Reenviar correo'}
+            {estado === 'enviando' ? 'Reenviando…' : espera > 0 ? `Reenviar correo (${espera} s)` : 'Reenviar correo'}
           </button>
           {estado === 'reenviado' ? <p className="font-semibold">Listo: lo enviamos otra vez a {email}.</p> : null}
           {error ? <p role="alert" className="font-semibold text-red-700">{error}</p> : null}

@@ -67,7 +67,8 @@ export default function IngresarPage() {
     } catch (error) {
       // Cuenta creada pero sin confirmar: no es un error, solo falta el correo.
       if (error instanceof AppError && error.code === 'CORREO_SIN_CONFIRMAR') {
-        setAviso(errorMessage(error));
+        // Se guarda el correo de este intento: el aviso no cambia si luego se edita el campo.
+        setAviso(email.trim().toLowerCase());
       } else {
         setServerError(errorMessage(error));
       }
@@ -101,7 +102,7 @@ export default function IngresarPage() {
         {aviso ? (
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-navy-900">Tu cuenta todavía no está confirmada.</p>
-            <CorreoEnviado email={email.trim().toLowerCase()} que="el enlace para confirmar tu cuenta" reenviar />
+            <CorreoEnviado email={aviso} que="el enlace para confirmar tu cuenta (cuando te registraste)" reenviar />
           </div>
         ) : null}
         {serverError ? (

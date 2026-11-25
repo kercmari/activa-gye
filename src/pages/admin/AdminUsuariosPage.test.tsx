@@ -50,12 +50,12 @@ describe('AdminUsuariosPage', () => {
   it('no deja cambiar tu propio rol', async () => {
     renderPage();
 
-    const mio = await screen.findByRole('radiogroup', { name: 'Rol de yo@activagye.test' });
-    for (const b of within(mio).getAllByRole('radio')) expect(b).toBeDisabled();
+    const mio = await screen.findByRole('group', { name: 'Rol de yo@activagye.test' });
+    for (const b of within(mio).getAllByRole('button')) expect(b).toBeDisabled();
     expect(screen.getByText('Tú')).toBeInTheDocument();
-    const otra = screen.getByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
-    expect(within(otra).getByRole('radio', { name: 'Usuario' })).toBeEnabled();
-    expect(within(otra).getByRole('radio', { name: 'Usuario' })).toHaveAttribute('aria-checked', 'true');
+    const otra = screen.getByRole('group', { name: 'Rol de otra@activagye.test' });
+    expect(within(otra).getByRole('button', { name: 'Usuario' })).toBeEnabled();
+    expect(within(otra).getByRole('button', { name: 'Usuario' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('solo ofrece «Administrador» a correos de la lista permitida', async () => {
@@ -64,19 +64,19 @@ describe('AdminUsuariosPage', () => {
       { id: 'dani', email: 'dani@activagye.test', full_name: 'Dani', role: 'usuario', created_at: '2026-11-04T10:00:00Z', can_be_admin: true },
     ]);
     renderPage();
-    const otra = await screen.findByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
-    expect(within(otra).queryByRole('radio', { name: 'Administrador' })).not.toBeInTheDocument();
-    expect(within(otra).getByRole('radio', { name: 'Nutricionista' })).toBeInTheDocument();
-    const dani = screen.getByRole('radiogroup', { name: 'Rol de dani@activagye.test' });
-    expect(within(dani).getByRole('radio', { name: 'Administrador' })).toBeEnabled();
+    const otra = await screen.findByRole('group', { name: 'Rol de otra@activagye.test' });
+    expect(within(otra).queryByRole('button', { name: 'Administrador' })).not.toBeInTheDocument();
+    expect(within(otra).getByRole('button', { name: 'Nutricionista' })).toBeInTheDocument();
+    const dani = screen.getByRole('group', { name: 'Rol de dani@activagye.test' });
+    expect(within(dani).getByRole('button', { name: 'Administrador' })).toBeEnabled();
   });
 
   it('elegir un rol pide confirmación y llama a adminSetRole', async () => {
     h.repo.adminSetRole.mockResolvedValue(undefined);
     const user = userEvent.setup();
     renderPage();
-    const otra = await screen.findByRole('radiogroup', { name: 'Rol de otra@activagye.test' });
-    await user.click(within(otra).getByRole('radio', { name: 'Nutricionista' }));
+    const otra = await screen.findByRole('group', { name: 'Rol de otra@activagye.test' });
+    await user.click(within(otra).getByRole('button', { name: 'Nutricionista' }));
     const dialogo = await screen.findByRole('dialog');
     await user.click(within(dialogo).getAllByRole('button').at(-1)!);
     expect(h.repo.adminSetRole).toHaveBeenCalledWith('otra', 'nutricionista');

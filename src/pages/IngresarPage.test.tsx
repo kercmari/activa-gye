@@ -75,11 +75,15 @@ describe('IngresarPage', () => {
     renderAt('/ingresar');
     await fillAndSubmit(user);
     const aviso = await screen.findByRole('status');
-    expect(aviso).toHaveTextContent('Te enviamos el enlace para confirmar tu cuenta a usuario@activagye.test');
+    expect(aviso).toHaveTextContent('Te enviamos el enlace para confirmar tu cuenta (cuando te registraste) a usuario@activagye.test');
+    // Editar el campo no cambia el correo del aviso.
+    await user.type(screen.getByLabelText('Correo electrónico'), 'x');
+    expect(aviso).toHaveTextContent('a usuario@activagye.test.');
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Reenviar correo' }));
     expect(repo.resendSignupConfirmation).toHaveBeenCalledWith('usuario@activagye.test');
     expect(await screen.findByText('Listo: lo enviamos otra vez a usuario@activagye.test.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Reenviar correo \(60 s\)/ })).toBeDisabled();
   });
 
   beforeEach(() => {

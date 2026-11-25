@@ -188,15 +188,14 @@ export default function AdminUsuariosPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         {/* Botones en vez de lista desplegable: la lista se cortaba dentro de la tabla. */}
-                        <div role="radiogroup" aria-label={`Rol de ${u.email}`} className="inline-flex flex-nowrap gap-1 rounded-xl bg-slate-100 p-1">
+                        <div role="group" aria-label={`Rol de ${u.email}`} className="inline-flex flex-nowrap gap-1 rounded-xl bg-slate-100 p-1">
                           {ROLES.filter((r) => r !== 'admin' || u.can_be_admin || rolDe(u) === 'admin').map((r) => {
                             const activo = rolDe(u) === r;
                             return (
                               <button
                                 key={r}
                                 type="button"
-                                role="radio"
-                                aria-checked={activo}
+                                aria-pressed={activo}
                                 disabled={esYo || guardando}
                                 onClick={() => elegirRol(u, r)}
                                 className={`min-h-11 whitespace-nowrap rounded-lg px-3 text-sm font-bold transition disabled:opacity-60 ${
