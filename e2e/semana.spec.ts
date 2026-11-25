@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ADMIN, conCandadoDeFases, fijarFases, ingresar, llenarFicha, NUTRI, registrar, ruta, salir } from './helpers';
+import { conCandadoDeFases, fijarFases, ingresar, llenarFicha, NUTRI, registrar, ruta, salir, suscribirPaciente } from './helpers';
 
 // Semana gratis de punta a punta: registro → ficha → Día 1 → chequeo → Agenda (candado y muro) →
 // condiciones de salud (sin plan automático) → cuenta con la semana completa → suscripción → nutricionista.
@@ -105,7 +105,6 @@ test('ficha con Diabetes con fase 2 apagada: la semana no se genera sola y solo 
 test('cuenta con semana completada: muro de suscripción, pago y solicitud para la nutricionista', async ({ page }) => {
   test.skip(test.info().project.name !== 'desktop', 'Flujo de pago completo: se prueba una vez en escritorio.');
   await conCandadoDeFases(async () => {
-    const stamp = Date.now();
     await fijarFases(page, { phase1: true, phase2: true, phase3: false });
 
     // 1. Semana completada: Hoy lo dice y ofrece suscribirse.
@@ -116,39 +115,22 @@ test('cuenta con semana completada: muro de suscripción, pago y solicitud para 
     await page.getByRole('link', { name: 'Suscribirme para seguir', exact: true }).click();
     await expect.poll(() => ruta(page)).toBe('/mi-plan/suscripcion');
 
-    // 2. Elige el plan (Suscribirme) e informa la transferencia. Si ya está activa o ya hay un
-    // comprobante informado (ejecuciones anteriores), no se repite: se usa la referencia que está en pantalla.
-    const activa = page.getByText('Suscripción activa', { exact: true });
-    const informado = page.getByText(/Comprobante informado:/);
-    let referencia = `TRF-SEMANA-${stamp}`;
-    const suscribirme = page.getByRole('button', { name: 'Suscribirme', exact: true }).first();
-    await expect(activa.or(informado).or(suscribirme)).toBeVisible();
-    // Si ya está activa, un pago anterior ya fue confirmado: el paso 3 no aplica (no busca la fila).
-    const yaActiva = await activa.isVisible();
-    if (!yaActiva && !(await informado.isVisible())) {
-      await suscribirme.click();
-      await page.getByLabel('Número de comprobante', { exact: true }).fill(referencia);
-      await page.getByRole('button', { name: 'Informar pago', exact: true }).click();
-      await expect(informado).toBeVisible();
-    } else if (await informado.isVisible()) {
-      referencia = ((await informado.textContent()) ?? '').match(/TRF-[\w-]+/)?.[0] ?? referencia;
+    // 2 y 3. Pide el plan por correo y el admin lo aprueba (si ya está activa, no se repite).
+    await salir(page);
+    await suscribirPaciente(page, SEMANA_DEMO.correo, SEMANA_DEMO.clave);
+
+    // 3b. La paciente pide nutricionista (si aún no hay una solicitud pendiente).
+    await ingresar(page, SEMANA_DEMO.correo, SEMANA_DEMO.clave);
+    await expect.poll(() => ruta(page)).toBe('/perfil');
+    await page.goto('/mi-panel?tab=nutricionista');
+    const pedirNutri = page.getByRole('button', { name: 'Solicitar nutricionista', exact: true });
+    const cancelar = page.getByRole('button', { name: 'Cancelar solicitud', exact: true });
+    await expect(pedirNutri.or(cancelar)).toBeVisible();
+    if (await pedirNutri.isVisible()) {
+      await pedirNutri.click();
+      await expect(cancelar).toBeVisible();
     }
     await salir(page);
-
-    // 3. Admin marca pagada la factura de esa referencia (si todavía está pendiente).
-    if (!yaActiva) {
-      await ingresar(page, ADMIN.correo, ADMIN.clave);
-      await expect.poll(() => ruta(page)).toBe('/perfil');
-      await page.goto('/admin/pagos');
-      const fila = page.getByRole('row').filter({ hasText: referencia }).first();
-      await expect(fila).toBeVisible();
-      const marcar = fila.getByRole('button', { name: 'Marcar pagada', exact: true });
-      if (await marcar.isVisible()) {
-        await marcar.click();
-        await expect(marcar).toHaveCount(0);
-      }
-      await salir(page);
-    }
 
     // 4. La nutricionista ve la solicitud de la paciente de la semana demo.
     await ingresar(page, NUTRI.correo, NUTRI.clave);

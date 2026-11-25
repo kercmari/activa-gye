@@ -27,8 +27,8 @@ test('a 360 px con sesión de admin no hay scroll horizontal en / ni en /admin/p
     await expect(page.getByRole('button', { name: /Menú de cuenta de/ })).toBeVisible();
     expect(await anchoDeLaPagina(page)).toBeLessThanOrEqual(360);
 
-    await page.goto('/admin/pagos');
-    await expect(page.getByRole('heading', { name: 'Pagos', exact: true })).toBeVisible();
+    await page.goto('/admin/suscripciones');
+    await expect(page.getByRole('heading', { name: 'Suscripciones', exact: true })).toBeVisible();
     expect(await anchoDeLaPagina(page)).toBeLessThanOrEqual(360);
     // Cada pestaña de pagos (con sus tablas) también cabe sin scroll horizontal de la página.
     for (const pestana of await page.getByRole('tab').all()) {

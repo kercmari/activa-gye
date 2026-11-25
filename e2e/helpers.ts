@@ -192,40 +192,34 @@ export async function expectVolver(page: Page) {
 
 /**
  * Nutricionista: acepta la solicitud del paciente `nombre` en la bolsa.
- * Si la cuenta no tiene suscripción activa, elige un plan, el admin lo marca pagado y vuelve a aceptar.
- * Si la suscripción ya está activa, solo vuelve a aceptar. Deja la página en /nutri/pacientes/:id
+ * Si el cupo del plan está lleno, pide un plan, el admin lo aprueba y vuelve a aceptar. Deja la página en /nutri/pacientes/:id
  * y devuelve esa ruta.
  */
-export async function aceptarSolicitudDe(page: Page, nombre: string, stamp: number): Promise<string> {
+export async function aceptarSolicitudDe(page: Page, nombre: string, _stamp: number): Promise<string> {
   await ingresar(page, NUTRI.correo, NUTRI.clave);
   await expect.poll(() => ruta(page)).toBe('/perfil');
   await page.goto('/nutri/solicitudes');
   await expectVolver(page);
   const fila = page.getByRole('listitem').filter({ hasText: nombre });
   await expect(fila).toBeVisible();
-  await fila.getByRole('button', { name: 'Aceptar', exact: true }).click();
 
+  await fila.getByRole('button', { name: 'Aceptar', exact: true }).click();
+  // Con el cupo del plan lleno, el aceptar no abre la ficha y ofrece «Ver mi suscripción».
   const verSuscripcion = page.getByRole('link', { name: 'Ver mi suscripción' });
   await expect.poll(async () => (await ruta(page)).startsWith('/nutri/pacientes/') || (await verSuscripcion.isVisible())).toBe(true);
   if (!(await ruta(page)).startsWith('/nutri/pacientes/')) {
+    // La nutricionista pide un plan (Mejorar, Solicitar o Renovar), el admin lo aprueba y vuelve a aceptar.
     await verSuscripcion.click();
     await expect.poll(() => ruta(page)).toBe('/nutri/suscripcion');
-    const yaActiva = page.getByRole('button', { name: 'Ya tienes una suscripción activa', exact: true }).first();
-    if (!(await yaActiva.isVisible())) {
-      await page.getByRole('button', { name: 'Elegir este plan', exact: true }).first().click();
-      await page.getByLabel('Número de comprobante', { exact: true }).fill(`TRF-E2E-${stamp}`);
-      await page.getByRole('button', { name: 'Informar pago', exact: true }).click();
-      await expect(page.getByText('Comprobante reportado', { exact: true }).first()).toBeVisible();
-      await salir(page);
-      await ingresar(page, ADMIN.correo, ADMIN.clave);
-      await expect.poll(() => ruta(page)).toBe('/perfil');
-      await page.goto('/admin/pagos');
-      await page.getByRole('button', { name: 'Marcar pagada', exact: true }).first().click();
-      await salir(page);
-      await ingresar(page, NUTRI.correo, NUTRI.clave);
-      await expect.poll(() => ruta(page)).toBe('/perfil');
-    }
+    const pedir = page.getByRole('button', { name: /^(Mejorar a este plan|Solicitar este plan|Renovar este plan)$/ }).first();
+    await pedir.click();
+    await expect(page.getByRole('status').filter({ hasText: 'Tu solicitud quedó registrada' })).toBeVisible();
+    await salir(page);
+    await aprobarSuscripcionDe(page, NUTRI.correo);
+    await ingresar(page, NUTRI.correo, NUTRI.clave);
+    await expect.poll(() => ruta(page)).toBe('/perfil');
     await page.goto('/nutri/solicitudes');
+    await expectVolver(page);
     await page.getByRole('listitem').filter({ hasText: nombre }).getByRole('button', { name: 'Aceptar', exact: true }).click();
   }
   await expect.poll(() => ruta(page)).toMatch(/^\/nutri\/pacientes\/.+/);
@@ -240,6 +234,7 @@ export async function finalizarAtencion(page: Page, rutaPaciente: string) {
   await ingresar(page, NUTRI.correo, NUTRI.clave);
   await expect.poll(() => ruta(page)).toBe('/perfil');
   await page.goto(rutaPaciente);
+  await page.getByRole('tab', { name: 'Ficha', exact: true }).click();
   await page.getByRole('button', { name: 'Finalizar atención', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Finalizar atención', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -248,9 +243,9 @@ export async function finalizarAtencion(page: Page, rutaPaciente: string) {
 }
 
 /**
- * Paciente: suscribe la cuenta a un plan y el admin marca pagada la factura de la suscripción.
+ * Paciente: pide el plan por correo y el admin aprueba la solicitud en Admin → Suscripciones.
  * La agenda pagada (plan_days) solo se ve con suscripción activa. Idempotente: si ya está
- * «Suscripción activa», no hace nada; si ya hay un comprobante informado, lo reutiliza.
+ * «Suscripción activa», no hace nada.
  * Deja la sesión cerrada.
  */
 export async function suscribirPaciente(page: Page, correo: string, clave: string) {
@@ -258,34 +253,32 @@ export async function suscribirPaciente(page: Page, correo: string, clave: strin
   await expect.poll(() => ruta(page)).toBe('/perfil');
   await page.goto('/mi-plan/suscripcion');
   const activa = page.getByText('Suscripción activa', { exact: true }).first();
-  const informado = page.getByText(/Comprobante informado:/).first();
-  const suscribirme = page.getByRole('button', { name: 'Suscribirme', exact: true }).first();
-  await expect(activa.or(informado).or(suscribirme)).toBeVisible();
+  const enviada = page.getByRole('status').filter({ hasText: 'Tu solicitud quedó registrada' });
+  const pedir = page.getByRole('button', { name: 'Contactar por correo para solicitar una suscripción' }).first();
+  await expect(activa.or(enviada).or(pedir)).toBeVisible();
   if (await activa.isVisible()) {
     await salir(page);
     return;
   }
-
-  let referencia = `TRF-SUS-${Date.now()}`;
-  if (await informado.isVisible()) {
-    referencia = ((await informado.textContent()) ?? '').match(/TRF-[\w-]+/)?.[0] ?? referencia;
-  } else {
-    await suscribirme.click();
-    await page.getByLabel('Número de comprobante', { exact: true }).fill(referencia);
-    await page.getByRole('button', { name: 'Informar pago', exact: true }).click();
-    await expect(informado).toBeVisible();
+  if (!(await enviada.isVisible())) {
+    await pedir.click();
+    await expect(enviada).toBeVisible();
   }
   await salir(page);
+  await aprobarSuscripcionDe(page, correo);
+}
 
+/** Admin: aprueba la solicitud de suscripción por correo de esa persona (fila con su correo). Deja la sesión cerrada. */
+export async function aprobarSuscripcionDe(page: Page, correo: string) {
   await ingresar(page, ADMIN.correo, ADMIN.clave);
   await expect.poll(() => ruta(page)).toBe('/perfil');
-  await page.goto('/admin/pagos');
-  const fila = page.getByRole('row').filter({ hasText: referencia }).first();
-  await expect(fila).toBeVisible();
-  const marcar = fila.getByRole('button', { name: 'Marcar pagada', exact: true });
-  if (await marcar.isVisible()) {
-    await marcar.click();
-    await expect(marcar).toHaveCount(0);
+  await page.goto('/admin/suscripciones');
+  const solicitud = page.getByRole('listitem').filter({ hasText: correo }).first();
+  const aprobar = solicitud.getByRole('button', { name: 'Aprobar', exact: true });
+  if (await aprobar.isVisible()) {
+    await aprobar.click();
+    await page.getByRole('button', { name: 'Sí, aprobar', exact: true }).click();
+    await expect(aprobar).toHaveCount(0);
   }
   await salir(page);
 }

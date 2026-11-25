@@ -72,6 +72,9 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await expectVolver(page);
 
     // 3. Seguimiento y día del plan (hoy).
+    // Las secciones de la ficha son pestañas: el seguimiento está en «Seguimiento».
+    await page.goto(rutaPaciente);
+    await page.getByRole('tab', { name: 'Seguimiento', exact: true }).click();
     const seguimiento = page.getByRole('form', { name: 'Nuevo seguimiento' });
     await seguimiento.getByLabel('Peso (kg)', { exact: true }).fill('76');
     await seguimiento.getByLabel('Observaciones', { exact: true }).fill('Primer control E2E.');
@@ -79,6 +82,7 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await seguimiento.getByRole('button', { name: 'Guardar seguimiento', exact: true }).click();
     await expect(seguimiento.getByLabel('Peso (kg)', { exact: true })).toHaveValue('', { timeout: 15_000 });
 
+    await page.getByRole('tab', { name: 'Calendario', exact: true }).click();
     const diaHoy = page.getByRole('listitem').filter({ has: page.getByText('Hoy', { exact: true }) });
     await diaHoy.getByRole('button', { name: 'Agregar plan', exact: true }).click();
     await page.getByLabel('Título', { exact: true }).fill(titulo);
