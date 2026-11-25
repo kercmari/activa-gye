@@ -100,7 +100,8 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await page.getByLabel('Título del día', { exact: true }).fill(titulo);
     await page.getByLabel('Comidas', { exact: true }).fill('Desayuno: avena. Almuerzo: pollo con ensalada.');
     await page.getByRole('button', { name: 'Agregar día', exact: true }).click();
-    await expect(page.getByText(titulo, { exact: true }).first()).toBeVisible();
+    // El día se muestra como «fecha · título» en una misma línea: se busca el título dentro de la fila.
+    await expect(page.getByRole('listitem').filter({ hasText: titulo }).first()).toBeVisible();
     await page.getByRole('button', { name: 'Entregar', exact: true }).click();
     await page.getByRole('button', { name: 'Entregar receta', exact: true }).click();
     await expect(page.getByText(/Entregada el/)).toBeVisible();
@@ -122,7 +123,8 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await page.goto(rutaPaciente);
     await expect(page.getByText(/1 de 7 días cumplidos esta semana/)).toBeVisible();
 
-    // 5. Nutricionista crea la factura.
+    // 5. Nutricionista crea la factura: los cobros están en la pestaña Seguimiento.
+    await page.getByRole('tab', { name: 'Seguimiento', exact: true }).click();
     const factura = page.getByRole('form', { name: 'Nueva factura' });
     await factura.getByLabel('Concepto', { exact: true }).fill(concepto);
     await factura.getByLabel('Monto (USD)', { exact: true }).fill('15');
@@ -145,6 +147,7 @@ test('fase 2 completa: solicitud → aceptar → calendario → cumplido → fac
     await ingresar(page, NUTRI.correo, NUTRI.clave);
     await expect.poll(() => ruta(page)).toBe('/perfil');
     await page.goto(rutaPaciente);
+    await page.getByRole('tab', { name: 'Seguimiento', exact: true }).click();
     const filaFactura = page.locator('li, tr, article').filter({ hasText: concepto });
     await filaFactura.getByRole('button', { name: 'Marcar pagada', exact: true }).click();
     await expect(filaFactura.getByText('Pagada', { exact: true })).toBeVisible();
