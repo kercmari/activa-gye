@@ -1,9 +1,20 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { repo, type Followup, type Invoice, type InvoiceStatus, type PatientDetail } from '../../data';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
+import {
+  repo,
+  type CareOrigin,
+  type Followup,
+  type Invoice,
+  type InvoiceStatus,
+  type PatientDetail,
+  type Prescription,
+  type PrescriptionKind,
+  type RecipeBalance,
+} from '../../data';
 import PhaseGate from '../../components/PhaseGate';
 import NutriShell from '../../components/nutri/NutriShell';
 import PlanEditor from '../../components/nutri/PlanEditor';
+import RecetaEditor from '../../components/nutri/RecetaEditor';
 import FollowupForm from '../../components/nutri/FollowupForm';
 import InvoiceForm from '../../components/nutri/InvoiceForm';
 import TrialProgress from '../../components/nutri/TrialProgress';
@@ -177,12 +188,148 @@ function CobrosSection({ patientId }: { patientId: string }) {
   );
 }
 
+const KIND_LABELS: Record<PrescriptionKind, string> = {
+  dieta: 'Dieta',
+  rutina: 'Rutina',
+  recomendacion: 'Recomendación',
+};
+
+const TABS = [
+  { id: 'calendario', label: 'Calendario' },
+  { id: 'recetas', label: 'Recetas' },
+  { id: 'progreso', label: 'Progreso' },
+  { id: 'seguimiento', label: 'Seguimiento' },
+  { id: 'ficha', label: 'Ficha' },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
+
+function isTab(value: string | null): value is TabId {
+  return TABS.some((t) => t.id === value);
+}
+
+/** Origen del paciente y su saldo de recetas. Se monta de nuevo (key) cuando cambia algo. */
+function OrigenResumen({ patientId, origin }: { patientId: string; origin: CareOrigin }) {
+  const state = useAsync<RecipeBalance | null>(
+    () => (origin === 'propio' ? Promise.resolve(null) : repo.getRecipeBalance(patientId)),
+    [patientId, origin],
+  );
+
+  let saldo: ReactNode;
+  if (origin === 'propio') {
+    saldo = <span>Paciente propio: no descuenta recetas</span>;
+  } else if (state.status === 'loading') {
+    saldo = <span role="status">Cargando recetas…</span>;
+  } else if (state.status === 'error') {
+    saldo = (
+      <span role="alert">
+        {state.message}{' '}
+        <button type="button" onClick={state.reload} className="font-bold text-brand-orange underline">Reintentar</button>
+      </span>
+    );
+  } else if (state.data && state.data.left === 0 && state.data.quota === 0) {
+    saldo = <span>Recetas: sin suscripción activa</span>;
+  } else if (state.data) {
+    saldo = <span>Recetas: {state.data.left} de {state.data.quota}</span>;
+  } else {
+    saldo = null;
+  }
+
+  return (
+    <p className="flex flex-wrap gap-x-3 text-sm font-semibold text-slate-600">
+      <span>Origen: {origin === 'propio' ? 'Propio (lo agregaste tú)' : 'Plataforma'}</span>
+      <span aria-hidden="true">·</span>
+      {saldo}
+    </p>
+  );
+}
+
+/** Lista de recetas del paciente (borradores y entregadas) con su editor. */
+function RecetasSection({ patientId, origin, onChanged }: { patientId: string; origin: CareOrigin; onChanged: () => void }) {
+  const state = useAsync<Prescription[]>(() => repo.listPrescriptions(patientId), [patientId]);
+  const [editing, setEditing] = useState<Prescription | 'nueva' | null>(null);
+
+  if (editing) {
+    return (
+      <Card title="Recetas" id="recetas-titulo">
+        <RecetaEditor
+          key={editing === 'nueva' ? 'nueva' : editing.id}
+          patientId={patientId}
+          origin={origin}
+          prescription={editing === 'nueva' ? null : editing}
+          onBack={() => setEditing(null)}
+          onChanged={() => {
+            state.reload();
+            onChanged();
+          }}
+        />
+      </Card>
+    );
+  }
+
+  let list: ReactNode;
+  if (state.status === 'loading') {
+    list = <Loading text="Cargando recetas…" />;
+  } else if (state.status === 'error') {
+    list = <ErrorState message={state.message} onRetry={state.reload} />;
+  } else if (state.data.length === 0) {
+    list = (
+      <EmptyState
+        title="Sin recetas"
+        text="Crea la primera receta de este paciente: una dieta, una rutina o una recomendación."
+        action={{ label: 'Nueva receta', onClick: () => setEditing('nueva') }}
+      />
+    );
+  } else {
+    list = (
+      <ul className="space-y-4">
+        {state.data.map((r) => {
+          const entregada = r.status === 'entregada';
+          return (
+            <li key={r.id} className="flex flex-col gap-4 rounded-2xl bg-surface p-5 md:flex-row md:items-center md:justify-between">
+              <div className="min-w-0 space-y-1">
+                <p className="font-extrabold text-navy-900">{r.title}</p>
+                <p className="text-sm text-slate-600">
+                  {KIND_LABELS[r.kind]} · {entregada && r.delivered_at ? `Entregada el ${formatDate(r.delivered_at)}` : `Creada el ${formatDate(r.created_at)}`}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge tone={entregada ? 'green' : 'orange'}>{entregada ? 'Entregada' : 'Borrador'}</Badge>
+                <Button variant="secondary" size="md" onClick={() => setEditing(r)}>
+                  {entregada ? 'Ver' : 'Editar'}
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  }
+
+  return (
+    <Card title="Recetas" id="recetas-titulo">
+      <p className="text-slate-600">
+        Las recetas llenan el calendario del paciente. Un borrador se edita; al entregarla, sus días quedan visibles para el paciente.
+      </p>
+      <div>
+        <Button variant="primary" size="md" onClick={() => setEditing('nueva')}>Nueva receta</Button>
+      </div>
+      {list}
+    </Card>
+  );
+}
+
 function PacienteDetalle({ patientId, detail }: { patientId: string; detail: PatientDetail }) {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const { profile, intake, photo_url: photoUrl, request } = detail;
   const [confirming, setConfirming] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+  const tabParam = params.get('tab');
+  const tab: TabId = isTab(tabParam) ? tabParam : 'calendario';
+
+  const goTab = (id: TabId) => setParams({ tab: id });
 
   const age = ageFromBirth(profile.birth_date);
   const goal = intake?.goal ?? profile.goal;
@@ -218,67 +365,106 @@ function PacienteDetalle({ patientId, detail }: { patientId: string; detail: Pat
           {request.accepted_at ? (
             <p className="text-sm text-slate-500">Te atiende desde {formatDate(request.accepted_at)}</p>
           ) : null}
+          <OrigenResumen key={version} patientId={patientId} origin={request.origin} />
         </div>
         <LinkButton to="/nutri" variant="secondary">Volver al tablero</LinkButton>
       </div>
 
       {finishError ? <p role="alert" className="font-semibold text-red-600">{finishError}</p> : null}
 
-      <Card title="Ficha" id="ficha-titulo">
-        {intake ? (
-          <dl className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Peso</dt>
-              <dd className="mt-1 text-navy-900">{intake.weight_kg} kg</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Estatura</dt>
-              <dd className="mt-1 text-navy-900">{intake.height_cm} cm</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">IMC</dt>
-              <dd className="mt-1 text-navy-900">{bmi ? `${bmi.value.toFixed(1)} · ${bmi.label}` : 'Sin dato'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Cintura</dt>
-              <dd className="mt-1 text-navy-900">{intake.waist_cm != null ? `${intake.waist_cm} cm` : 'Sin dato'}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Actividad</dt>
-              <dd className="mt-1 text-navy-900">{activity ? ACTIVITY_LABELS[activity] : 'Sin dato'}</dd>
-            </div>
-            <div className="sm:col-span-2">
-              <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Notas de salud</dt>
-              <dd className="mt-1 whitespace-pre-line text-navy-900">{intake.health_notes?.trim() ? intake.health_notes : 'Sin notas de salud'}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="text-slate-600">El paciente todavía no llenó su ficha inicial.</p>
-        )}
-        <div className="space-y-3 border-t border-slate-100 pt-6">
-          <h3 className="font-extrabold text-navy-900">Foto de cuerpo entero</h3>
-          <FotoCuerpo url={photoUrl} />
-        </div>
-      </Card>
+      <div role="tablist" aria-label="Secciones de la ficha" className="flex gap-2 overflow-x-auto pb-1">
+        {TABS.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            id={`tab-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${t.id}`}
+            onClick={() => goTab(t.id)}
+            className={`min-h-11 shrink-0 rounded-full px-5 text-sm font-extrabold transition ${
+              tab === t.id ? 'bg-navy-900 text-white' : 'bg-white text-navy-900 shadow-md shadow-navy-900/5 hover:bg-surface'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
-      <TrialProgress patientId={patientId} />
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="space-y-8">
+        {tab === 'calendario' ? (
+          <Card title="Calendario" id="calendario-titulo">
+            <PlanEditor patientId={patientId} onGoToRecipes={() => goTab('recetas')} />
+          </Card>
+        ) : null}
 
-      <Card title="Calendario" id="calendario-titulo">
-        <PlanEditor patientId={patientId} />
-      </Card>
+        {tab === 'recetas' ? (
+          <RecetasSection
+            patientId={patientId}
+            origin={request.origin}
+            onChanged={() => setVersion((v) => v + 1)}
+          />
+        ) : null}
 
-      <SeguimientosSection patientId={patientId} />
+        {tab === 'progreso' ? <TrialProgress patientId={patientId} /> : null}
 
-      <CobrosSection patientId={patientId} />
+        {tab === 'seguimiento' ? (
+          <>
+            <SeguimientosSection patientId={patientId} />
+            <CobrosSection patientId={patientId} />
+          </>
+        ) : null}
 
-      <Card title="Finalizar atención" id="finalizar-titulo">
-        <p className="text-slate-600">Cuando termines la atención, la solicitud se cierra. Podrás seguir viendo los datos de este paciente.</p>
-        <div>
-          <Button variant="danger" onClick={() => setConfirming(true)} disabled={finishing}>
-            Finalizar atención
-          </Button>
-        </div>
-      </Card>
+        {tab === 'ficha' ? (
+          <>
+            <Card title="Ficha" id="ficha-titulo">
+              {intake ? (
+                <dl className="grid gap-5 sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Peso</dt>
+                    <dd className="mt-1 text-navy-900">{intake.weight_kg} kg</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Estatura</dt>
+                    <dd className="mt-1 text-navy-900">{intake.height_cm} cm</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">IMC</dt>
+                    <dd className="mt-1 text-navy-900">{bmi ? `${bmi.value.toFixed(1)} · ${bmi.label}` : 'Sin dato'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Cintura</dt>
+                    <dd className="mt-1 text-navy-900">{intake.waist_cm != null ? `${intake.waist_cm} cm` : 'Sin dato'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Actividad</dt>
+                    <dd className="mt-1 text-navy-900">{activity ? ACTIVITY_LABELS[activity] : 'Sin dato'}</dd>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <dt className="text-xs font-extrabold uppercase tracking-widest text-slate-500">Notas de salud</dt>
+                    <dd className="mt-1 whitespace-pre-line text-navy-900">{intake.health_notes?.trim() ? intake.health_notes : 'Sin notas de salud'}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className="text-slate-600">El paciente todavía no llenó su ficha inicial.</p>
+              )}
+              <div className="space-y-3 border-t border-slate-100 pt-6">
+                <h3 className="font-extrabold text-navy-900">Foto de cuerpo entero</h3>
+                <FotoCuerpo url={photoUrl} />
+              </div>
+            </Card>
+
+            <Card title="Finalizar atención" id="finalizar-titulo">
+              <p className="text-slate-600">Cuando termines la atención, la solicitud se cierra. Podrás seguir viendo los datos de este paciente.</p>
+              <div>
+                <Button variant="danger" onClick={() => setConfirming(true)} disabled={finishing}>
+                  Finalizar atención
+                </Button>
+              </div>
+            </Card>
+          </>
+        ) : null}
+      </div>
 
       {confirming ? (
         <ConfirmDialog
