@@ -1,0 +1,44 @@
+# XW1 — IMPLEMENTADOR (haiku) — e2e en verde
+**Reporte:** `work/out/XW1/report.md` (qué hiciste, archivos, gates con números, «Pedidos al orquestador», pendientes).
+**Commits:** empiezan con `XW1: `.
+**Proyecto:** VITGO (antes «Activa GYE»; todo texto visible dice VITGO), plataforma de **seguimiento nutricional** intermediaria (tipo Uber), sin IA. Al llenar su ficha, el paciente recibe **gratis 7 días** de comidas y rutinas sacados de **plantillas de nutricionista** guardadas en la base (elegidas por IMC, edad, género y objetivo). Los días **se abren uno a uno con el progreso diario** (chequeo + mitad de los ítems → el siguiente se abre mañana). Desde el día 8 hay que **suscribirse**. La interfaz copia el concepto de **Base Vital** (Hoy · Progreso · Agenda · Guía con barra inferior). Ya existe y NO se rompe: buscador de lugares, ficha, solicitudes, nutricionista, pagos manuales, reseñas, fases.
+**Lee primero:** `work/TOKEN-PROTOCOL.md` (reglas y gates, obligatorio); `docs/superpowers/specs/2026-11-21-semana-gratis-design.md` (todo); `docs/superpowers/plans/2026-11-21-db-contrato-semana.md` (nombres exactos de tablas y funciones: NO inventes otros); `src/data/types.ts`, sección «SEMANA GRATIS» y los métodos nuevos al final de `Repo` (el contrato: NO lo cambies).
+**Referencia visual (solo lectura, NO se importa ni se copia la carpeta):** `work/ref-base-vital/` tiene las pantallas originales de Base Vital (React 18 + CSS propio). Tradúcelas a React 19 + Tailwind con los colores de VITGO; textos en español; sin voz, sin 3D, sin IA.
+**Convenciones fijas:**
+- Stack: React 19 + TypeScript + Vite + Tailwind v4 + `react-router` v8 (importa SIEMPRE desde `'react-router'`). Íconos `lucide-react`. **No hay recharts**: gráficos con SVG propio o `src/components/profile/WeightChart`. Tests: Vitest + Testing Library (jsdom, `src/test/setup.ts`), con `vi.mock` del repo.
+- Datos: SOLO con `import { repo } from '<ruta>/data'`. Sesión: `useAuth()` de `src/auth/AuthContext`. Fases: `usePhase(n)` de `src/auth/SettingsContext` y `src/components/PhaseGate.tsx`.
+- UI reutilizable: `src/components/ui/` (`Button`, `LinkButton`, `BackButton`, `PageHeader`, `States` → `Loading`, `EmptyState`, `ErrorState`, `errorMessage`; `Field` → `TextField`, `SelectField`, `TextArea`; `Badge`), `src/components/profile/` (`ConfirmDialog`, `WeightChart`, `useAsync`), `src/components/admin/AdminShell.tsx`, `src/components/panel/PagosTab.tsx` (facturas y reporte de transferencia). Míralos antes de crear algo parecido.
+- Estilo: el de las páginas existentes (`bg-navy-900`, `text-navy-900`, `bg-brand-orange`, `text-brand-orange`, `bg-surface`, tarjetas `rounded-[1.75rem] bg-white shadow-xl shadow-navy-900/5`, `.display`, `.eyebrow`, `mx-auto max-w-6xl px-4`). Bien a 360 px y a 1280 px.
+- Cada carga: cargando (`role="status"`), vacío (mensaje + acción), error (mensaje + «Reintentar»). **Ningún botón sin acción ni pantalla sin salida.**
+- Textos en español de Ecuador. Errores con `errorMessage(e)`; agrega a mano mensajes claros para `REQUIERE_NUTRICIONISTA`, `SIN_PLANTILLA`, `FALTA_FICHA`, `SIN_SUSCRIPCION` donde apliquen. Sin datos inventados presentados como reales: si la plantilla es `borrador`, muestra «Plan de muestra pendiente de revisión por una nutricionista».
+- Marcadores (`Pending`) de tu tarea: reemplázalos por completo.
+- **Commits sin la línea `Co-Authored-By`** (regla de la dueña). No cambies el autor.
+
+**Reglas SQL:**
+- Solo tus archivos SQL (nombres exactos del contrato). Nunca edites migraciones anteriores.
+- Sigue `docs/superpowers/plans/2026-11-21-db-contrato-semana.md` al pie de la letra. Si algo no cuadra, anótalo en «Pedidos al orquestador».
+- **Tienes la base local para ti solo en esta ronda:** `npx supabase db reset` (migraciones + `supabase/seed.sql`) y `npx supabase test db`. NUNCA `supabase start/stop`, NUNCA `db push`, NUNCA `link`.
+- pgTAP: `begin; select plan(n); … select * from finish(); rollback;`. Para actuar como usuario: crea usuarios con `insert into auth.users(id, email, raw_user_meta_data, …)` y luego `set local role authenticated; select set_config('request.jwt.claims', json_build_object('sub', '<uuid>', 'role', 'authenticated')::text, true);`. `reset role;` para preparar datos. Mira `supabase/tests/0*.sql` para copiar el patrón exacto.
+- Gates: `db reset` sin errores + `test db` verde + lint/build/vitest.
+
+**Esta ronda (pedido de la dueña, 24/11):** lee COMPLETOS `docs/superpowers/specs/2026-11-24-recetas-planes-suscripcion.md` (diseño, manda) y `docs/superpowers/plans/2026-11-24-recetas-planes-suscripcion.md` (contrato exacto: nombres de columnas, funciones, firmas, tipos, métodos del `Repo`, códigos de error). Usa esos nombres tal cual; si algo no cuadra con el código, anótalo en «Pedidos al orquestador» y sigue con lo demás.
+**Regla de la dueña (entrega del lunes con solo la fase 1):** cuando una fase está apagada en `app_settings`, sus **vistas no se ven**: ni enlaces en menús (escritorio, móvil, menú de cuenta, pie de página), ni pestañas, ni botones, tarjetas o pasos «Próximamente» que anuncien lo que viene. Al encender la fase en la base (`update public.app_settings set phase2 = true where id = 1;` o Admin → Fases) y recargar, todo vuelve a aparecer. Si alguien abre a mano la URL de una vista apagada, sigue viendo el `PhaseGate` con salida (no se rompe ni da 404 en blanco). La base NO cambia (ya bloquea por detrás). Fuente de verdad: `usePhase(n)` de `src/auth/SettingsContext.tsx` (mientras carga asume solo fase 1: nunca muestra de más).
+**Qué es de cada fase** (README «Entrega por fases»): fase 1 = inicio, lugares, deportes, conócenos, contacto, guía, registro/ingreso, perfil, favoritos, progreso de peso, ficha, semana gratis (Mi plan: Hoy, Agenda, Progreso). Fase 2 = solicitar nutricionista, notificaciones, Mi panel (calendario, pagos, mi nutricionista), Mi plan → Suscripción, día 8+ de la Agenda, panel del nutricionista, Admin → Pagos. Fase 3 = reseñas, reporte PDF, Admin → Datos de lugares, registro abierto.
+**Otros agentes trabajan a la vez en otros worktrees:** toca SOLO tus archivos. No hagas push ni deploy. No toques la nube (nada de `supabase link`, `db push`, `wrangler`). No leas ni imprimas `.env*`.
+**Lee además:** `work/out/RV3/report.md` (última revisión, manda), `work/out/RV3-v1/report.md`, `work/out/RV1/report.md`, `work/out/RV2/report.md`, `work/out/E2E-RX2.txt` (última e2e, cortada en 36/66 con 11 rojos). `git log --oneline -15`.
+
+**Archivos que son tuyos (solo estos):** `e2e/**`, `src/pages/nutri/PacientePage.tsx` (y su test). NO toques `src/components/panel/PagosTab.tsx`, `src/data/supabase/errors.ts`, `src/pages/plan/**`, `supabase/**` (son de XW2, que trabaja a la vez).
+**La base local es compartida con XW2:** NO hagas `db reset`. Puedes correr specs que cambian `app_settings` (las protege el candado de fases); deja las fases como estaban (1 on, 2 off, 3 off).
+
+## Qué arreglar (RV3 BLOCKING 1 y 2)
+1. **Botón «Nueva receta» repetido** (`PacientePage.tsx:279` y `:314`): con la lista vacía hay dos. Quita la `action` del `EmptyState` (deja el mensaje) para que haya uno solo; test Vitest que con 0 recetas hay exactamente 1 botón «Nueva receta». `e2e/fase2.spec.ts:94` queda con un solo botón (no uses `.first()` como parche).
+2. **Candado huérfano** en `e2e/helpers.ts` `conCandadoDeFases`: además de la espera, libera el candado si su **edad** (`statSync(CANDADO).mtimeMs`) pasa de 10 minutos (un proceso muerto). Sin bajar la seguridad: un candado joven se sigue esperando.
+3. **Cada spec que salió rojo en `E2E-RX2.txt`** (cuenta, desborde, fase1, fase2, fase3, navegacion, guia, registro ×3, y su versión mobile): córrelo SOLO (`--project=desktop` primero) y clasifícalo: (a) prueba vieja frente a la UI nueva → actualiza la prueba sin quitar aserciones de lo que el usuario ve; (b) falla de la app → arréglala si está en tus archivos, si no anótala en «Pedidos al orquestador» con archivo:línea; (c) entorno (candado, cupo de registro): `registro.spec.ts`/`cuenta.spec.ts` deben asegurar cupo como `registrarCon`. Prioridad: fase2 > registro/cuenta > fase1/navegacion/desborde > fase3/guia.
+Si corres e2e: con TU preview (`npm run -s build && (npx vite preview --port $E2E_PORT --strictPort --host 127.0.0.1 > /dev/null 2>&1 &)`) y `E2E_PORT=$E2E_PORT npx playwright test <archivo> --reporter=line`; mata tu preview por PID (nunca `pkill -f`).
+En el reporte: tabla spec → verde / rojo (causa) / no corrido.
+
+**Tiempo:** máximo 20 minutos. Commit apenas algo funcione con gates verdes; luego sigue. Lo commiteado vale.
+**Gates antes de cada commit:** `npm run -s lint` (0 errores), `npm run -s build` (exit 0), `npx vitest run` (verde). Reporta los números.
+**Commits sin la línea `Co-Authored-By`** (regla de la dueña). No cambies el autor.
+
+**Última línea del reporte:** `NEXT: la cadena corre la e2e completa y las revisiones RW1 ‖ RW2.`
