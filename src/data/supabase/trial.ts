@@ -206,6 +206,9 @@ interface PlanRow {
   patient_quota: number | string;
   active: boolean;
   sort: number | string;
+  daily_record_limit?: number | string | null;
+  recipe_quota?: number | string | null;
+  features?: string[] | null;
 }
 
 function toPlan(r: PlanRow): SubscriptionPlan {
@@ -216,6 +219,9 @@ function toPlan(r: PlanRow): SubscriptionPlan {
     patient_quota: toNum(r.patient_quota) ?? 0,
     active: r.active,
     sort: toNum(r.sort) ?? 0,
+    daily_record_limit: toNum(r.daily_record_limit),
+    recipe_quota: toNum(r.recipe_quota),
+    features: r.features ?? [],
   };
 }
 
@@ -227,8 +233,9 @@ function toInvoice(r: InvoiceRow): Invoice {
   return { ...r, amount: toNum(r.amount) ?? 0 };
 }
 
-interface PatientSubscriptionRow extends Omit<PatientSubscription, 'monthly_price'> {
+interface PatientSubscriptionRow extends Omit<PatientSubscription, 'monthly_price' | 'recipes_left'> {
   monthly_price: number | string;
+  recipes_left: number | string | null;
 }
 
 async function listPatientPlans(): Promise<SubscriptionPlan[]> {
@@ -248,7 +255,7 @@ async function getMyPatientSubscription(): Promise<PatientSubscription | null> {
   const rows = unwrap(await supabase.rpc('my_patient_subscription')) as PatientSubscriptionRow[] | null;
   const r = rows?.[0];
   if (!r) return null;
-  return { ...r, monthly_price: toNum(r.monthly_price) ?? 0 };
+  return { ...r, monthly_price: toNum(r.monthly_price) ?? 0, recipes_left: toNum(r.recipes_left) ?? 0 };
 }
 
 async function choosePatientPlan(planId: string): Promise<Invoice> {

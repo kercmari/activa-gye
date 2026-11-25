@@ -54,6 +54,9 @@ interface PlanRow {
   patient_quota: number | string;
   active: boolean;
   sort: number | string;
+  daily_record_limit?: number | string | null;
+  recipe_quota?: number | string | null;
+  features?: string[] | null;
 }
 
 function toPlan(r: PlanRow): SubscriptionPlan {
@@ -64,6 +67,9 @@ function toPlan(r: PlanRow): SubscriptionPlan {
     patient_quota: toNum(r.patient_quota) ?? 0,
     active: r.active,
     sort: toNum(r.sort) ?? 0,
+    daily_record_limit: toNum(r.daily_record_limit),
+    recipe_quota: toNum(r.recipe_quota),
+    features: r.features ?? [],
   };
 }
 
@@ -130,6 +136,10 @@ function toAdminSubscription(r: AdminSubscriptionRow): Subscription {
       patient_quota: toNum(r.patient_quota) ?? 0,
       active: true,
       sort: 0,
+      // La RPC aún no devuelve límites ni textos del plan: se muestran vacíos en la vista de admin.
+      daily_record_limit: null,
+      recipe_quota: null,
+      features: [],
     },
   };
 }
@@ -200,7 +210,7 @@ async function savePlanDay(patientId: string, input: PlanDayInput): Promise<Plan
     ? await supabase.from('plan_days').update(campos).eq('id', input.id).select().single()
     : await supabase
         .from('plan_days')
-        .insert({ ...campos, patient_id: patientId })
+        .insert({ ...campos, patient_id: patientId, prescription_id: input.prescription_id })
         .select()
         .single();
   if (res.error) throw planDayError(res.error);
@@ -211,9 +221,19 @@ async function deletePlanDay(id: string): Promise<void> {
   unwrap(await supabase.from('plan_days').delete().eq('id', id));
 }
 
-async function copyPlanWeek(patientId: string, fromMonday: string, toMonday: string): Promise<number> {
+async function copyPlanWeek(
+  patientId: string,
+  fromMonday: string,
+  toMonday: string,
+  prescriptionId: string,
+): Promise<number> {
   const copiados = unwrap(
-    await supabase.rpc('copy_plan_week', { p_patient: patientId, p_from: fromMonday, p_to: toMonday }),
+    await supabase.rpc('copy_plan_week', {
+      p_patient: patientId,
+      p_from: fromMonday,
+      p_to: toMonday,
+      p_prescription: prescriptionId,
+    }),
   );
   return toNum(copiados) ?? 0;
 }
@@ -245,6 +265,9 @@ async function adminSavePlan(input: SubscriptionPlanInput): Promise<Subscription
     patient_quota: input.patient_quota,
     active: input.active,
     sort: input.sort,
+    daily_record_limit: input.daily_record_limit,
+    recipe_quota: input.recipe_quota,
+    features: input.features,
   };
   const row = unwrap(
     await supabase

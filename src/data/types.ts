@@ -140,6 +140,12 @@ export interface AppSettings {
   /** Cupo de pacientes mientras phase3 está apagada. */
   patient_limit: number;
   patients_count: number;
+  /** Correo de la administradora: lo usa el botón «Contactar por correo» (mailto:). */
+  admin_email: string;
+  /** Cupo de pacientes de una nutricionista sin suscripción activa. */
+  free_patient_limit: number;
+  /** Registros por día de una nutricionista sin suscripción activa. */
+  free_daily_record_limit: number;
 }
 export type AppSettingsInput = Pick<AppSettings, 'phase1' | 'phase2' | 'phase3' | 'patient_limit'>;
 
@@ -207,7 +213,12 @@ export interface CareRequest {
   patient_goal?: Goal | null;
   /** Solo para el paciente. */
   nutritionist_name?: string | null;
+  /** plataforma = llegó pidiendo atención; propio = la nutricionista lo agregó. */
+  origin: CareOrigin;
 }
+
+/** Origen de la atención: `propio` no descuenta recetas ni exige suscripción del paciente. */
+export type CareOrigin = 'plataforma' | 'propio';
 
 export interface PatientSummary {
   patient_id: string;
@@ -219,6 +230,9 @@ export interface PatientSummary {
   days_total: number;
   days_done: number;
   last_followup_date: string | null;
+  origin: CareOrigin;
+  /** Recetas que le quedan (solo pacientes de plataforma); null en los propios. */
+  recipes_left: number | null;
 }
 
 export interface PatientDetail {
@@ -236,6 +250,10 @@ export interface NutriDashboard {
   week_days_done: number;
   pending_invoices: number;
   subscription: Subscription | null;
+  /** Cupo y registros de hoy frente al plan vigente (o al gratis). */
+  limits: NutriLimits;
+  /** Recetas entregadas esta semana. */
+  recipes_week: number;
 }
 
 export interface Followup {
@@ -263,10 +281,16 @@ export interface PlanDay {
   notes: string | null;
   done_at: string | null;
   patient_note: string | null;
+  /** Receta a la que pertenece el día. null = día viejo (anterior a las recetas). */
+  prescription_id: string | null;
   created_at: string;
   updated_at: string;
 }
-export type PlanDayInput = Pick<PlanDay, 'day' | 'title' | 'meals' | 'exercise' | 'notes'> & { id?: string };
+/** Todo día nuevo va dentro de una receta borrador (prescription_id obligatorio). */
+export type PlanDayInput = Pick<PlanDay, 'day' | 'title' | 'meals' | 'exercise' | 'notes'> & {
+  id?: string;
+  prescription_id: string;
+};
 
 export interface AppNotification {
   id: string;
@@ -290,6 +314,12 @@ export interface SubscriptionPlan {
   patient_quota: number;
   active: boolean;
   sort: number;
+  /** Registros por día; null = sin límite. */
+  daily_record_limit: number | null;
+  /** Recetas por período (solo planes de paciente); null = no aplica. */
+  recipe_quota: number | null;
+  /** Textos que se muestran en la tarjeta del plan. */
+  features: string[];
 }
 export type SubscriptionPlanInput = Omit<SubscriptionPlan, 'id'> & { id?: string };
 
@@ -459,6 +489,89 @@ export interface PatientSubscription {
   status: SubscriptionStatus;
   current_period_end: string | null;
   created_at: string;
+  /** Recetas que le quedan en el período. */
+  recipes_left: number;
+}
+
+/* ------------------------------------------------------------------ RECETAS, PLANES Y SUSCRIPCIÓN POR CORREO (ronda 7)
+ * Diseño: docs/superpowers/specs/2026-11-24-recetas-planes-suscripcion.md
+ * BD:     docs/superpowers/plans/2026-11-24-recetas-planes-suscripcion.md
+ */
+
+export type PrescriptionKind = 'dieta' | 'rutina' | 'recomendacion';
+export type PrescriptionStatus = 'borrador' | 'entregada';
+
+/** Lo que la nutricionista le entrega al paciente: dieta, rutina o recomendación. */
+export interface Prescription {
+  id: string;
+  patient_id: string;
+  nutritionist_id: string;
+  kind: PrescriptionKind;
+  title: string;
+  body: string;
+  status: PrescriptionStatus;
+  /** Se fija al entregar: true = descontó una receta del paciente. */
+  counts_against_patient: boolean;
+  delivered_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+/** Sin id = receta nueva (borrador). */
+export interface PrescriptionInput {
+  id?: string;
+  patient_id: string;
+  kind: PrescriptionKind;
+  title: string;
+  body: string;
+}
+
+/** Saldo de recetas del paciente. period_end: fin del período de la suscripción activa. */
+export interface RecipeBalance {
+  left: number;
+  quota: number;
+  period_end: string | null;
+}
+
+/** Límites de la nutricionista. daily_record_limit null = sin límite. */
+export interface NutriLimits {
+  plan_name: string | null;
+  patient_quota: number;
+  daily_record_limit: number | null;
+  patients_used: number;
+  records_today: number;
+}
+
+/** Una solicitud de suscripción (pendiente) o una suscripción activa, para Admin → Suscripciones. */
+export interface AdminSubscriptionRow {
+  invoice_id: string;
+  subscription_id: string;
+  audience: 'nutricionista' | 'paciente';
+  user_id: string;
+  full_name: string;
+  email: string;
+  plan_name: string;
+  amount: number;
+  status: SubscriptionStatus;
+  created_at: string;
+  period_end: string | null;
+  /** null para nutricionistas. */
+  recipes_left: number | null;
+}
+export interface AdminSubscriptionsOverview {
+  pending: AdminSubscriptionRow[];
+  active: AdminSubscriptionRow[];
+}
+
+export interface ContactSettingsInput {
+  admin_email: string;
+  free_patient_limit: number;
+  free_daily_record_limit: number;
+}
+
+/** Resultado de agregar un paciente: su id y la receta «Semana 1» en borrador. */
+export interface NutriAddPatientResult {
+  patient_id: string;
+  prescription_id: string;
 }
 
 export interface ContactInput { name: string; email: string; subject: string; message: string }
@@ -496,6 +609,8 @@ export class AppError extends Error {
  * CUPO_PLAN_LLENO (nutricionista sin cupo en su plan), YA_TIENES_SUSCRIPCION, NO_ES_TU_PACIENTE, NO_PERMITIDO,
  * SIN_BASE (función que necesita Supabase).
  * Semana gratis: REQUIERE_NUTRICIONISTA (ficha con condiciones de salud), SIN_PLANTILLA.
+ * Recetas y suscripción: SIN_RECETAS, SIN_SUSCRIPCION_PACIENTE, LIMITE_DIARIO, PACIENTE_NO_REGISTRADO,
+ * PACIENTE_OCUPADO, RECETA_REQUERIDA, RECETA_CERRADA, DIA_OCUPADO.
  */
 export interface Repo {
   // Catálogo (público)
@@ -587,8 +702,6 @@ export interface Repo {
   listPlanDays(patientId: string, from: string, to: string): Promise<PlanDay[]>;
   savePlanDay(patientId: string, input: PlanDayInput): Promise<PlanDay>;
   deletePlanDay(id: string): Promise<void>;
-  /** Copia los días de la semana que empieza en fromMonday a la que empieza en toMonday. Devuelve cuántos copió. */
-  copyPlanWeek(patientId: string, fromMonday: string, toMonday: string): Promise<number>;
   /** Paciente: marcar/desmarcar cumplido, con nota opcional. */
   setPlanDayDone(id: string, done: boolean, note: string | null): Promise<PlanDay>;
 
@@ -655,4 +768,28 @@ export interface Repo {
   adminListGuide(): Promise<GuideEntry[]>;
   adminSaveGuideEntry(input: GuideEntryInput): Promise<GuideEntry>;
   adminDeleteGuideEntry(id: string): Promise<void>;
+
+  // ---------------------------------------------------------------- Recetas, planes y suscripción por correo (ronda 7)
+  /** Nutricionista/admin: recetas de un paciente (borradores y entregadas). Más nueva primero. */
+  listPrescriptions(patientId: string): Promise<Prescription[]>;
+  /** Paciente: solo sus recetas entregadas. Más nueva primero. */
+  listMyPrescriptions(): Promise<Prescription[]>;
+  /** Crea (sin id) o edita una receta. Editar solo en borrador (RECETA_CERRADA si ya se entregó). */
+  savePrescription(input: PrescriptionInput): Promise<Prescription>;
+  /** Solo borradores. Sus días se borran en cascada. */
+  deletePrescription(id: string): Promise<void>;
+  /** Entrega la receta: descuenta 1 de las recetas del paciente si es de plataforma. Sin dobles descuentos. */
+  deliverPrescription(id: string): Promise<Prescription>;
+  /** Saldo de recetas. Sin patientId = el propio. */
+  getRecipeBalance(patientId?: string): Promise<RecipeBalance>;
+  /** Agrega a un paciente que ya tiene cuenta propia (PACIENTE_NO_REGISTRADO, PACIENTE_OCUPADO, CUPO_PLAN_LLENO). */
+  nutriAddPatient(email: string): Promise<NutriAddPatientResult>;
+  /** Límites de la nutricionista: plan, cupo de pacientes y registros de hoy. */
+  getNutriLimits(): Promise<NutriLimits>;
+  /** Admin: solicitudes pendientes y suscripciones activas (pacientes y nutricionistas). */
+  adminSubscriptionsOverview(): Promise<AdminSubscriptionsOverview>;
+  /** Admin: correo de la administradora y cupos del plan gratis. Devuelve los ajustes nuevos. */
+  adminSaveContactSettings(input: ContactSettingsInput): Promise<AppSettings>;
+  /** Copia los días libres de la semana de fromMonday a la de toMonday, dentro de la receta borrador prescriptionId. Devuelve cuántos creó. */
+  copyPlanWeek(patientId: string, fromMonday: string, toMonday: string, prescriptionId: string): Promise<number>;
 }

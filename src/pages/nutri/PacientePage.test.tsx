@@ -45,7 +45,7 @@ const DETALLE: PatientDetail = {
   photo_url: 'https://ejemplo.test/foto.jpg',
   request: {
     id: 'r1', patient_id: 'u1', nutritionist_id: 'n1', status: 'aceptada', message: null,
-    created_at: '2026-01-01T10:00:00Z', accepted_at: '2026-02-01T10:00:00Z', closed_at: null,
+    created_at: '2026-01-01T10:00:00Z', accepted_at: '2026-02-01T10:00:00Z', closed_at: null, origin: 'plataforma',
   },
 };
 

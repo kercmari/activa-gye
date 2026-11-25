@@ -31,7 +31,7 @@ function plan(id: string, day: string, doneAt: string | null = null): PlanDay {
   return {
     id, patient_id: 'u1', nutritionist_id: 'n1', day, title: `Plan ${id}`,
     meals: 'Avena con fruta', exercise: 'Caminata de 30 min', notes: null,
-    done_at: doneAt, patient_note: null, created_at: '2026-11-01', updated_at: '2026-11-01',
+    done_at: doneAt, patient_note: null, prescription_id: null, created_at: '2026-11-01', updated_at: '2026-11-01',
   };
 }
 

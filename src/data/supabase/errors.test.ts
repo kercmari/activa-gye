@@ -27,6 +27,24 @@ describe('toAppError', () => {
     expect(e.code).toBe('RED');
   });
 
+  it('traduce los códigos de recetas, planes y registros a su texto en español', () => {
+    const esperados: Record<string, string> = {
+      SIN_RECETAS: 'Este paciente ya usó sus 10 recetas del mes. Podrá recibir más cuando renueve su suscripción.',
+      SIN_SUSCRIPCION_PACIENTE: 'Este paciente no tiene una suscripción activa.',
+      LIMITE_DIARIO: 'Llegaste a tu límite de registros de hoy. Mejora tu plan para registrar más.',
+      PACIENTE_NO_REGISTRADO: 'No hay una cuenta con ese correo. Pídele que se registre y vuelve a agregarlo.',
+      PACIENTE_OCUPADO: 'Ese paciente ya está con una nutricionista.',
+      RECETA_REQUERIDA: 'Cada día del calendario debe pertenecer a una receta. Crea una receta primero.',
+      RECETA_CERRADA: 'Esta receta ya fue entregada y no se puede cambiar.',
+      DIA_OCUPADO: 'Ese día ya tiene una receta. Elige un día libre.',
+    };
+    for (const [codigo, texto] of Object.entries(esperados)) {
+      const e = toAppError({ message: codigo });
+      expect(e.code).toBe(codigo);
+      expect(e.message).toBe(texto);
+    }
+  });
+
   it('devuelve el mismo AppError si ya lo es', () => {
     const original = new AppError('NO_EXISTE', 'No encontramos eso. Puede que ya no exista.');
     expect(toAppError(original)).toBe(original);

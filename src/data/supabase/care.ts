@@ -1,9 +1,11 @@
 /** Atención con Supabase: ficha, solicitudes, pacientes, tablero y avisos (dueño: D2). */
 import type {
   AppNotification,
+  CareOrigin,
   CareRequest,
   Goal,
   NutriDashboard,
+  NutriLimits,
   NutritionistPublic,
   PatientDetail,
   PatientIntake,
@@ -86,6 +88,26 @@ interface CareRow {
   patient_sex?: Sex | null;
   patient_goal?: Goal | null;
   nutritionist_name?: string | null;
+  origin?: CareOrigin | null;
+}
+
+/** Límites de la nutricionista (nutri_limits y nutri_dashboard.limits). */
+export interface NutriLimitsRow {
+  plan_name: string | null;
+  patient_quota: number | string;
+  daily_record_limit: number | string | null;
+  patients_used: number | string;
+  records_today: number | string;
+}
+
+export function toNutriLimits(r: NutriLimitsRow): NutriLimits {
+  return {
+    plan_name: r.plan_name ?? null,
+    patient_quota: toNum(r.patient_quota) ?? 0,
+    daily_record_limit: toNum(r.daily_record_limit),
+    patients_used: toNum(r.patients_used) ?? 0,
+    records_today: toNum(r.records_today) ?? 0,
+  };
 }
 
 function toCareRequest(r: CareRow, patientId: string): CareRequest {
@@ -98,6 +120,7 @@ function toCareRequest(r: CareRow, patientId: string): CareRequest {
     created_at: r.created_at,
     accepted_at: r.accepted_at ?? null,
     closed_at: r.closed_at ?? null,
+    origin: r.origin ?? 'plataforma',
     patient_name: r.patient_name,
     patient_age: r.patient_age === undefined ? undefined : toNum(r.patient_age),
     patient_sex: r.patient_sex,
@@ -274,6 +297,8 @@ interface PatientRow {
   days_total: number | string;
   days_done: number | string;
   last_followup_date: string | null;
+  origin: CareOrigin | null;
+  recipes_left: number | string | null;
 }
 
 async function listMyPatients(): Promise<PatientSummary[]> {
@@ -288,6 +313,8 @@ async function listMyPatients(): Promise<PatientSummary[]> {
     days_total: toNum(r.days_total) ?? 0,
     days_done: toNum(r.days_done) ?? 0,
     last_followup_date: r.last_followup_date,
+    origin: r.origin ?? 'plataforma',
+    recipes_left: toNum(r.recipes_left),
   }));
 }
 
@@ -330,6 +357,8 @@ async function getNutriDashboard(): Promise<NutriDashboard> {
     week_days_done: toNum(d.week_days_done) ?? 0,
     pending_invoices: toNum(d.pending_invoices) ?? 0,
     subscription: (d.subscription ?? null) as Subscription | null,
+    limits: toNutriLimits(d.limits as NutriLimitsRow),
+    recipes_week: toNum(d.recipes_week) ?? 0,
   };
 }
 

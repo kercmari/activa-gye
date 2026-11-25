@@ -320,6 +320,10 @@ function PlanForm({
       name: trimmed,
       monthly_price: priceN,
       patient_quota: quotaN,
+      // PROVISIONAL (DT1): este formulario aún no los edita (lo hace UA en Planes y correo); conserva los actuales.
+      daily_record_limit: initial?.daily_record_limit ?? null,
+      recipe_quota: initial?.recipe_quota ?? null,
+      features: initial?.features ?? [],
       active,
       sort: sortN,
     };

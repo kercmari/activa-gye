@@ -30,6 +30,7 @@ const SOLICITUD: CareRequest = {
   nutritionist_id: null,
   status: 'abierta',
   message: 'Quiero bajar de peso',
+  origin: 'plataforma',
   created_at: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
   accepted_at: null,
   closed_at: null,

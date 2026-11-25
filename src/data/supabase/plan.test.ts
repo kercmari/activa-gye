@@ -65,21 +65,29 @@ describe('copyPlanWeek', () => {
   it('llama la RPC con p_patient, p_from y p_to y devuelve el número copiado', async () => {
     sb.rpc.mockResolvedValue({ data: 7, error: null });
 
-    const copiados = await copyPlanWeek('pac-1', '2026-11-16', '2026-11-23');
+    const copiados = await copyPlanWeek('pac-1', '2026-11-16', '2026-11-23', 'rec-1');
 
     expect(sb.rpc).toHaveBeenCalledWith('copy_plan_week', {
       p_patient: 'pac-1',
       p_from: '2026-11-16',
       p_to: '2026-11-23',
+      p_prescription: 'rec-1',
     });
     expect(copiados).toBe(7);
   });
 });
 
 describe('savePlanDay', () => {
-  const DIA = { day: '2026-11-24', title: 'Semana de fuerza', meals: null, exercise: null, notes: null };
+  const DIA = {
+    day: '2026-11-24',
+    title: 'Semana de fuerza',
+    meals: null,
+    exercise: null,
+    notes: null,
+    prescription_id: 'rec-1',
+  };
 
-  it('sin id inserta el día con patient_id', async () => {
+  it('sin id inserta el día con patient_id y su receta', async () => {
     const insertado = { id: 'd-1', ...DIA, patient_id: 'pac-1' };
     const q = chain({ data: insertado, error: null });
     sb.from.mockReturnValue(q);
@@ -87,7 +95,9 @@ describe('savePlanDay', () => {
     const res = await savePlanDay('pac-1', DIA);
 
     expect(sb.from).toHaveBeenCalledWith('plan_days');
-    expect(q.insert).toHaveBeenCalledWith(expect.objectContaining({ patient_id: 'pac-1', day: DIA.day }));
+    expect(q.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ patient_id: 'pac-1', day: DIA.day, prescription_id: 'rec-1' }),
+    );
     expect(q.update).not.toHaveBeenCalled();
     expect(res).toEqual(insertado);
   });

@@ -29,7 +29,7 @@ const SESSION: Session = {
   },
 };
 
-const PLAN: SubscriptionPlan = { id: 'p1', name: 'Seguimiento mensual', monthly_price: 15, patient_quota: 10, active: true, sort: 1 };
+const PLAN: SubscriptionPlan = { id: 'p1', name: 'Seguimiento mensual', monthly_price: 15, patient_quota: 10, active: true, sort: 1, daily_record_limit: null, recipe_quota: 10, features: [] };
 
 const FACTURA: Invoice = {
   id: 'inv1', payer_id: 'u1', payee_id: null, kind: 'suscripcion_paciente', subscription_id: 's1',
@@ -100,7 +100,7 @@ describe('SuscribirmePage', () => {
   it('pendiente: muestra la factura y reportar el comprobante llama a reportInvoicePaid', async () => {
     const user = userEvent.setup();
     vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'pendiente',
+      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'pendiente',
       current_period_end: null, created_at: '2026-11-21',
     } satisfies PatientSubscription);
     vi.mocked(repo.listMyInvoices).mockResolvedValue([FACTURA]);
@@ -117,7 +117,7 @@ describe('SuscribirmePage', () => {
 
   it('activa: muestra hasta cuándo y no ofrece planes', async () => {
     vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'activa',
+      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
       current_period_end: '2026-12-21', created_at: '2026-11-21',
     });
     renderPage();
@@ -128,7 +128,7 @@ describe('SuscribirmePage', () => {
 
   it('activa con fecha fin con hora: muestra la fecha legible, nunca «Invalid Date»', async () => {
     vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'activa',
+      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
       current_period_end: '2099-12-21T15:00:00+00:00', created_at: '2026-11-21',
     });
     renderPage();
@@ -140,7 +140,7 @@ describe('SuscribirmePage', () => {
   it('vencida: muestra el aviso y «Suscribirme» llama a choosePatientPlan', async () => {
     const user = userEvent.setup();
     vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'vencida',
+      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'vencida',
       current_period_end: '2020-10-21T15:00:00+00:00', created_at: '2026-09-21',
     });
     vi.mocked(repo.choosePatientPlan).mockResolvedValue(FACTURA);
@@ -156,7 +156,7 @@ describe('SuscribirmePage', () => {
 
   it('activa con fecha pasada se trata como vencida', async () => {
     vi.mocked(repo.getMyPatientSubscription).mockResolvedValue({
-      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, status: 'activa',
+      id: 's1', plan_id: 'p1', plan_name: 'Seguimiento mensual', monthly_price: 15, recipes_left: 7, status: 'activa',
       current_period_end: '2020-10-21T15:00:00+00:00', created_at: '2026-09-21',
     });
     renderPage();

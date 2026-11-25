@@ -42,7 +42,7 @@ const SESSION: Session = {
 
 const ABIERTA: CareRequest = {
   id: 'c1', patient_id: 'u1', nutritionist_id: null, status: 'abierta', message: null,
-  created_at: '2026-11-20T10:00:00Z', accepted_at: null, closed_at: null,
+  created_at: '2026-11-20T10:00:00Z', accepted_at: null, closed_at: null, origin: 'plataforma',
 };
 
 const ACEPTADA: CareRequest = {

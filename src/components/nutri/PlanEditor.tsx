@@ -50,7 +50,8 @@ export default function PlanEditor({ patientId }: { patientId: string }) {
     setCopying(true);
     setNotice(null);
     try {
-      const copied = await repo.copyPlanWeek(patientId, monday, next);
+      // PROVISIONAL (DT1): UN2 pasa la receta borrador que se está editando.
+      const copied = await repo.copyPlanWeek(patientId, monday, next, '');
       setMonday(next);
       setNotice({ kind: 'ok', text: `Se copiaron ${copied} días.` });
     } catch (e) {
@@ -147,6 +148,7 @@ function WeekPlan({ patientId, monday }: WeekPlanProps) {
     try {
       await repo.savePlanDay(patientId, {
         ...(draft.id ? { id: draft.id } : {}),
+        prescription_id: '', // PROVISIONAL (DT1): UN2 pasa la receta borrador.
         day: draft.day,
         title,
         meals: orNull(draft.meals),
