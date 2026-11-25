@@ -65,6 +65,18 @@ describe('PagosTab', () => {
     expect(screen.getAllByText('Pendiente')).toHaveLength(2);
   });
 
+  it('la factura de suscripción no muestra el formulario de transferencia', async () => {
+    vi.mocked(repo.listMyInvoices).mockResolvedValue([
+      invoice('s1', 40, 'pendiente', { kind: 'suscripcion_paciente', concept: 'Suscripción mensual' }),
+    ]);
+    renderTab();
+
+    expect(await screen.findByText('Suscripción mensual')).toBeInTheDocument();
+    expect(screen.getByText(/Pendiente de aprobación de la administración/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /informar pago/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/comprobante/i)).not.toBeInTheDocument();
+  });
+
   it('informar pago valida y llama reportInvoicePaid', async () => {
     const user = userEvent.setup();
     vi.mocked(repo.listMyInvoices).mockResolvedValue([invoice('i1', 12.5, 'pendiente')]);

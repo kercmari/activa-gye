@@ -108,7 +108,15 @@ function InvoiceRow({ invoice, onReported }: { invoice: Invoice; onReported: (in
         </p>
       ) : null}
 
-      {invoice.status === 'pendiente' ? <ReportForm invoice={invoice} onReported={onReported} /> : null}
+      {invoice.status === 'pendiente' && invoice.kind === 'suscripcion_paciente' ? (
+        <p className="mt-4 text-sm text-slate-600">
+          Pendiente de aprobación de la administración. Si ya pagaste, escríbenos desde el pie de página.
+        </p>
+      ) : null}
+
+      {invoice.status === 'pendiente' && invoice.kind !== 'suscripcion_paciente' ? (
+        <ReportForm invoice={invoice} onReported={onReported} />
+      ) : null}
     </li>
   );
 }
