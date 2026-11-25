@@ -11,6 +11,7 @@ import { AppError } from '../types';
 import { downscaleToDataUrl } from '../../lib/image';
 import { catalogPart } from './catalog';
 import { ensureSeedUsers } from './seed-users';
+import { recetasPart } from './recetas';
 import {
   readTable, writeTable, currentUser, setSessionUserId, hashPassword, wait, nowIso, type StoredUser,
 } from './store';
@@ -417,6 +418,7 @@ async function adminSetRole(userId: string, role: Role): Promise<void> {
 }
 
 export const accountsPart: Partial<Repo> = {
+  ...recetasPart,
   getSession,
   onAuthChange,
   signUp,
