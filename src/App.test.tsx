@@ -3,10 +3,15 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App';
 import { useAuth } from './auth/AuthContext';
-import { usePhase } from './auth/SettingsContext';
+import { DEFAULT_SETTINGS, usePhase } from './auth/SettingsContext';
 
 vi.mock('./auth/AuthContext', () => ({ useAuth: vi.fn(), AuthProvider: ({ children }: { children: unknown }) => children }));
-vi.mock('./auth/SettingsContext', () => ({ usePhase: vi.fn(), SettingsProvider: ({ children }: { children: unknown }) => children }));
+vi.mock('./auth/SettingsContext', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./auth/SettingsContext')>()),
+  usePhase: vi.fn(),
+  useSettings: () => ({ settings: DEFAULT_SETTINGS }),
+  SettingsProvider: ({ children }: { children: unknown }) => children,
+}));
 vi.mock('./data', () => ({
   repo: {
     listSectors: vi.fn().mockResolvedValue([]),
