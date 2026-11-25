@@ -29,7 +29,7 @@ describe('toAppError', () => {
 
   it('traduce los códigos de recetas, planes y registros a su texto en español', () => {
     const esperados: Record<string, string> = {
-      SIN_RECETAS: 'Este paciente ya usó sus 10 recetas del mes. Podrá recibir más cuando renueve su suscripción.',
+      SIN_RECETAS: 'Este paciente ya usó sus recetas de este período. Podrá recibir más cuando renueve su suscripción.',
       SIN_SUSCRIPCION_PACIENTE: 'Este paciente no tiene una suscripción activa.',
       LIMITE_DIARIO: 'Llegaste a tu límite de registros de hoy. Mejora tu plan para registrar más.',
       PACIENTE_NO_REGISTRADO: 'No hay una cuenta con ese correo. Pídele que se registre y vuelve a agregarlo.',

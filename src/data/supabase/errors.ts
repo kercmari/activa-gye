@@ -33,7 +33,7 @@ const MENSAJES: Record<string, string> = {
   NO_PERMITIDO: 'No tienes permiso para hacer esto.',
   NO_ASIGNADA_A_TI: 'Esta solicitud no está asignada a ti.',
   PLAN_MUY_CORTO: 'El plan es muy corto. Escribe más detalle.',
-  SIN_RECETAS: 'Este paciente ya usó sus 10 recetas del mes. Podrá recibir más cuando renueve su suscripción.',
+  SIN_RECETAS: 'Este paciente ya usó sus recetas de este período. Podrá recibir más cuando renueve su suscripción.',
   SIN_SUSCRIPCION_PACIENTE: 'Este paciente no tiene una suscripción activa.',
   LIMITE_DIARIO: 'Llegaste a tu límite de registros de hoy. Mejora tu plan para registrar más.',
   PACIENTE_NO_REGISTRADO: 'No hay una cuenta con ese correo. Pídele que se registre y vuelve a agregarlo.',
