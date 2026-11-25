@@ -235,8 +235,8 @@ select is((select count(*)::int from public.plan_days), 2,
   '§6.10.9: con suscripción activa el paciente lee su agenda');
 select is((select status from public.my_patient_subscription()), 'activa',
   '§6.10.8: el paciente ve su suscripción activa');
-select throws_ok($$ select public.choose_patient_plan(current_setting('test.plan')::uuid) $$,
-  'P0001', 'YA_TIENES_SUSCRIPCION', '§6.10.8: con suscripción activa no puede elegir otro plan');
+select lives_ok($$ select public.choose_patient_plan(current_setting('test.plan')::uuid) $$,
+  '§6.10.8: con suscripción activa puede pedir otro plan (queda pendiente)');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 -- ============ 10. Guía ============

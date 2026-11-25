@@ -54,8 +54,8 @@ select set_config('test.req6', (select id::text from public.care_requests where 
 
 -- 1. Sin suscripción el nutricionista no puede aceptar; el admin sí.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
-select throws_ok($$ select public.accept_care_request(current_setting('test.req4')::uuid) $$,
-  'P0001', 'SIN_SUSCRIPCION', 'nutricionista sin suscripción no acepta');
+select lives_ok($$ select public.accept_care_request(current_setting('test.req4')::uuid) $$,
+  'nutricionista sin suscripción acepta con el cupo gratis');
 select pg_temp.as_super();
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000a4');
 select lives_ok($$ select public.accept_care_request(current_setting('test.req5')::uuid) $$,
@@ -64,8 +64,8 @@ select pg_temp.as_super();
 
 -- 2. Elegir plan crea suscripción pendiente + factura; solo el admin la marca pagada.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
-select lives_ok($$ select public.choose_plan((select id from public.subscription_plans where name = 'Básico')) $$,
-  'el nutricionista elige el plan Básico');
+select lives_ok($$ select public.choose_plan((select id from public.subscription_plans where name = 'Starter')) $$,
+  'el nutricionista elige el plan Starter');
 select pg_temp.as_super();
 select set_config('test.inv_sub', (select id::text from public.invoices
   where kind = 'suscripcion' and payer_id = '00000000-0000-0000-0000-0000000000b4'), true);
@@ -73,7 +73,7 @@ select set_config('test.inv_sub', (select id::text from public.invoices
 select is((select status from public.subscriptions where nutritionist_id = '00000000-0000-0000-0000-0000000000b4'),
   'pendiente', 'la suscripción queda pendiente');
 select is((select amount from public.invoices where id = current_setting('test.inv_sub')::uuid),
-  10.00::numeric, 'la factura de suscripción cobra el precio del plan');
+  9.00::numeric, 'la factura de suscripción cobra el precio del plan');
 
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
 select throws_ok($$ select public.mark_invoice_paid(current_setting('test.inv_sub')::uuid) $$,
@@ -91,10 +91,10 @@ select ok((select current_period_end from public.subscriptions where nutritionis
 
 -- Con suscripción activa el nutricionista acepta y no puede elegir otro plan.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
-select lives_ok($$ select public.accept_care_request(current_setting('test.req4')::uuid) $$,
-  'el nutricionista con suscripción acepta a c4');
-select throws_ok($$ select public.choose_plan((select id from public.subscription_plans where name = 'Pro')) $$,
-  'P0001', 'YA_TIENES_SUSCRIPCION', 'no puede elegir plan con una suscripción activa');
+select is((select status from public.care_requests where id = current_setting('test.req4')::uuid), 'aceptada',
+  'c4 quedó aceptada con el cupo gratis');
+select lives_ok($$ select public.choose_plan((select id from public.subscription_plans where name = 'Profesional')) $$,
+  'con una suscripción activa puede pedir otro plan (queda pendiente)');
 select pg_temp.as_super();
 
 -- 3. Facturas de consulta: solo a mis pacientes; flujo de pago manual.
@@ -166,7 +166,7 @@ select is((select author_name from public.list_reviews('nutricionista', '0000000
 reset role;
 
 -- 5. Cupo del plan: con cupo 1 y un paciente aceptado, el siguiente no entra; el admin sí.
-update public.subscription_plans set patient_quota = 1 where name = 'Básico';
+update public.subscription_plans set patient_quota = 1 where name = 'Starter';
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
 select throws_ok($$ select public.accept_care_request(current_setting('test.req6')::uuid) $$,
   'P0001', 'CUPO_PLAN_LLENO', 'con el cupo lleno no acepta otro paciente');
@@ -178,7 +178,7 @@ select pg_temp.as_super();
 
 -- Tablero, suscripción y administración.
 select pg_temp.as_user('00000000-0000-0000-0000-0000000000b4');
-select is((public.my_subscription()->'plan'->>'name'), 'Básico', 'mi suscripción muestra el plan');
+select is((public.my_subscription()->'plan'->>'name'), 'Starter', 'mi suscripción muestra el plan');
 select is((public.nutri_dashboard()->>'my_patients')::int, 1, 'el tablero cuenta mis pacientes');
 select pg_temp.as_super();
 

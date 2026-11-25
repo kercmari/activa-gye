@@ -24,7 +24,7 @@ update public.profiles set role = 'nutricionista' where id in ('00000000-0000-00
 
 -- Desde la migración 4 aceptar una solicitud exige suscripción activa (SIN_SUSCRIPCION).
 insert into public.subscriptions (nutritionist_id, plan_id, status, current_period_end)
-select n.id, (select p.id from public.subscription_plans p where p.name = 'Básico'), 'activa', now() + interval '30 days'
+select n.id, (select p.id from public.subscription_plans p where p.name = 'Starter'), 'activa', now() + interval '30 days'
   from (values ('00000000-0000-0000-0000-0000000000b1'::uuid), ('00000000-0000-0000-0000-0000000000b2'::uuid)) as n(id);
 
 -- ============ 1-5. Configuración pública ============

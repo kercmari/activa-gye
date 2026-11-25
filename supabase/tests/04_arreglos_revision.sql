@@ -25,24 +25,23 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d1","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select throws_ok(
+select lives_ok(
   $$ select public.accept_care_request((select id from public.care_requests
        where patient_id = '00000000-0000-0000-0000-0000000000d2' and status = 'abierta')) $$,
-  'P0001', 'SIN_SUSCRIPCION', 'BLOCKING 1: nutricionista sin suscripción activa no acepta');
+  'BLOCKING 1: nutricionista sin suscripción acepta con el cupo gratis');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 insert into public.subscriptions (nutritionist_id, plan_id, status, current_period_end)
 select '00000000-0000-0000-0000-0000000000d1', p.id, 'activa', now() + interval '30 days'
-  from public.subscription_plans p where p.name = 'Básico';
+  from public.subscription_plans p where p.name = 'Starter';
 
 do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000d1","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select lives_ok(
-  $$ select public.accept_care_request((select id from public.care_requests
-       where patient_id = '00000000-0000-0000-0000-0000000000d2' and status = 'abierta')) $$,
-  'BLOCKING 1: con suscripción activa el nutricionista acepta');
+select is((select status from public.care_requests
+            where patient_id = '00000000-0000-0000-0000-0000000000d2'), 'aceptada',
+  'BLOCKING 1: con suscripción activa la solicitud queda aceptada');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 -- ============ BLOCKING 2 [sql]: el cupo se mide contra los pacientes existentes, no contra 5 ============
