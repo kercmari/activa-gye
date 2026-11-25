@@ -1,5 +1,7 @@
 // Edge Function: envía un correo de aviso con Brevo (fase 3).
 // La llama el trigger de `notifications` (migración 20261121000005) con la clave de servicio.
+// Los avisos de contacto (kind 'contacto', migración 20261125000017) van a las administradoras
+// aunque la fase 3 esté apagada.
 // Sin BREVO_API_KEY no envía nada: responde 200 { sent: false, reason: 'sin_clave' } y el aviso
 // igual queda en la campana de la app.
 
@@ -24,7 +26,7 @@ const absoluteLink = (link: string | null, siteUrl: string) => {
   return `${siteUrl.replace(/\/+$/, '')}/${link.replace(/^\/+/, '')}`;
 };
 
-const renderHtml = (title: string, body: string | null, link: string | null, siteUrl: string) => {
+const renderHtml = (title: string, body: string | null, link: string | null, siteUrl: string, footer: string) => {
   const logo = `${siteUrl.replace(/\/+$/, '')}/img/logo.png`;
   const button = link
     ? `<p style="margin:28px 0 0"><a href="${escapeHtml(link)}" style="display:inline-block;background:#f26b1d;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:999px">Ver en VITGO</a></p>`
@@ -35,10 +37,10 @@ const renderHtml = (title: string, body: string | null, link: string | null, sit
   <div style="background:#ffffff;border-radius:20px;padding:28px">
     <img src="${escapeHtml(logo)}" alt="VITGO" height="44" style="display:block;height:44px;width:auto">
     <h1 style="font-size:20px;margin:24px 0 8px">${escapeHtml(title)}</h1>
-    ${body ? `<p style="font-size:15px;line-height:1.6;margin:0">${escapeHtml(body)}</p>` : ''}
+    ${body ? `<p style="font-size:15px;line-height:1.6;margin:0;white-space:pre-line">${escapeHtml(body)}</p>` : ''}
     ${button}
   </div>
-  <p style="font-size:12px;color:#6b7a94;text-align:center;margin:16px 0 0">Recibiste este correo porque tienes una cuenta en VITGO.</p>
+  <p style="font-size:12px;color:#6b7a94;text-align:center;margin:16px 0 0">${escapeHtml(footer)}</p>
 </div>
 </body></html>`;
 };
@@ -53,7 +55,7 @@ Deno.serve(async (req) => {
     return json({ error: 'No autorizado' }, 401);
   }
 
-  let input: { user_id?: unknown; title?: unknown; body?: unknown; link?: unknown };
+  let input: { user_id?: unknown; kind?: unknown; title?: unknown; body?: unknown; link?: unknown };
   try {
     input = await req.json();
   } catch {
@@ -64,6 +66,7 @@ Deno.serve(async (req) => {
   }
   const title = input.title.trim();
   const body = typeof input.body === 'string' && input.body.trim() ? input.body.trim() : null;
+  const isContact = input.kind === 'contacto';
   const rawLink = typeof input.link === 'string' && input.link.trim() ? input.link.trim() : null;
 
   const apiKey = Deno.env.get('BREVO_API_KEY') ?? '';
@@ -74,10 +77,10 @@ Deno.serve(async (req) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  // Solo se envía si la fase 3 está encendida.
+  // Solo se envía si la fase 3 está encendida (salvo los avisos de contacto).
   const { data: settings, error: settingsError } = await admin.rpc('get_public_settings');
   if (settingsError) return json({ sent: false, reason: 'error_configuracion' }, 500);
-  if (!(settings as { phase3?: boolean } | null)?.phase3) {
+  if (!isContact && !(settings as { phase3?: boolean } | null)?.phase3) {
     return json({ sent: false, reason: 'fase_apagada' });
   }
 
@@ -102,7 +105,9 @@ Deno.serve(async (req) => {
       sender: { name: senderName, email: senderEmail },
       to: [{ email }],
       subject: title,
-      htmlContent: renderHtml(title, body, link, siteUrl),
+      htmlContent: renderHtml(title, body, link, siteUrl, isContact
+        ? 'Recibiste este correo porque eres administradora de VITGO.'
+        : 'Recibiste este correo porque tienes una cuenta en VITGO.'),
       textContent: [title, body, link].filter(Boolean).join('\n\n'),
     }),
   });

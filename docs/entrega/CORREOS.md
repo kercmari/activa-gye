@@ -4,9 +4,15 @@ Cada aviso de la campana (por ejemplo, «Nueva solicitud de atención») tambié
 cuando la fase 3 está encendida y Brevo está configurado. Si falta cualquiera de los dos, el aviso
 igual queda en la campana y no se envía nada.
 
+**Formulario de contacto:** cada mensaje nuevo crea un aviso «Nuevo mensaje de contacto» para cada
+cuenta con rol administrador, y ese aviso se envía por correo con esta misma configuración. Estos
+correos salen aunque la fase 3 esté apagada (solo necesitan Brevo y el paso 3). El mensaje completo
+sigue en *Admin → Mensajes*.
+
 Piezas:
 - `supabase/functions/enviar-correo/index.ts`: la Edge Function que envía el correo con la API de Brevo.
 - `supabase/migrations/20261121000005_correos.sql`: el trigger que llama a la función después de cada aviso nuevo (con `pg_net`).
+- `supabase/migrations/20261125000017_contacto_correo_admins.sql`: el aviso de contacto para las administradoras.
 
 ## 1. Crear la cuenta gratis de Brevo
 
@@ -27,7 +33,7 @@ npx supabase secrets set BREVO_API_KEY=… BREVO_SENDER_EMAIL=… SITE_URL=…
 - `BREVO_SENDER_EMAIL`: el remitente verificado (por ejemplo, `avisos@tu-dominio.com`).
 - `SITE_URL`: la dirección pública del sitio, sin barra final (por ejemplo, `https://activa-gye.example`).
   Los enlaces de los avisos se arman con esta dirección.
-- `BREVO_SENDER_NAME` (opcional): nombre que ve la persona que recibe el correo. Si no se pone, es «Activa GYE».
+- `BREVO_SENDER_NAME` (opcional): nombre que ve la persona que recibe el correo. Si no se pone, es «VITGO».
 
 `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya los pone Supabase en la función; no hay que ponerlos.
 
