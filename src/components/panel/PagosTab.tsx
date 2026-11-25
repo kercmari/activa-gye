@@ -60,7 +60,7 @@ function PagosContent({ userId }: { userId: string }) {
   }
 
   const pendiente = invoices
-    .filter((inv) => inv.status === 'pendiente')
+    .filter((inv) => inv.status === 'pendiente' && inv.kind !== 'suscripcion_paciente')
     .reduce((total, inv) => total + inv.amount, 0);
 
   const onReported = (inv: Invoice) => setOverrides((prev) => ({ ...prev, [inv.id]: inv }));

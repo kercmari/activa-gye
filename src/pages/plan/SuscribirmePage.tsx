@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { repo, type PatientSubscription, type RecipeBalance, type SubscriptionPlan } from '../../data';
 import { useAuth } from '../../auth/AuthContext';
-import { useSettings } from '../../auth/SettingsContext';
+import { useSettings, usePhase } from '../../auth/SettingsContext';
 import PhaseGate from '../../components/PhaseGate';
 import { formatDateTimeLong } from '../../components/profile/labels';
 import { useAsync } from '../../components/profile/useAsync';
@@ -18,13 +18,22 @@ function formatPrecio(amount: number): string {
 
 /** Suscripción del paciente: plan de recetas, pedido por correo y saldo de recetas. */
 export default function SuscribirmePage() {
+  const fase2 = usePhase(2);
+  // Fase 2 apagada: ni cabecera ni enlaces de la suscripción; solo el candado con salida a «Mi plan».
+  if (!fase2) {
+    return (
+      <section className="mx-auto max-w-6xl px-4 py-10">
+        <PhaseGate phase={2} title="Suscripción" back={{ to: '/mi-plan', label: 'Volver a mi plan' }}>
+          {null}
+        </PhaseGate>
+      </section>
+    );
+  }
   return (
     <>
       <PageHeader eyebrow="Mi plan" title="Suscripción" subtitle="Tu nutricionista te entrega recetas que llenan tu calendario." back={false} />
       <section className="mx-auto max-w-6xl space-y-6 px-4 py-10">
-        <PhaseGate phase={2} title="Suscripción" back={{ to: '/mi-plan', label: 'Volver a mi plan' }}>
-          <SuscripcionData />
-        </PhaseGate>
+        <SuscripcionData />
         <div>
           <LinkButton to="/mi-plan/agenda" variant="secondary">Volver a la agenda</LinkButton>
         </div>

@@ -65,6 +65,16 @@ describe('PagosTab', () => {
     expect(screen.getAllByText('Pendiente')).toHaveLength(2);
   });
 
+  it('no suma la factura de suscripción de paciente (se paga a la administración)', async () => {
+    vi.mocked(repo.listMyInvoices).mockResolvedValue([
+      invoice('i1', 12.25, 'pendiente'),
+      invoice('s1', 40, 'pendiente', { kind: 'suscripcion_paciente', payee_name: 'Administración' }),
+    ]);
+    renderTab();
+
+    expect(await screen.findByText('Pendiente por pagar: $12,25')).toBeInTheDocument();
+  });
+
   it('la factura de suscripción no muestra el formulario de transferencia', async () => {
     vi.mocked(repo.listMyInvoices).mockResolvedValue([
       invoice('s1', 40, 'pendiente', { kind: 'suscripcion_paciente', concept: 'Suscripción mensual' }),

@@ -20,7 +20,7 @@ vi.mock('../../data', () => ({
 }));
 
 import { useAuth } from '../../auth/AuthContext';
-import { useSettings } from '../../auth/SettingsContext';
+import { useSettings, usePhase } from '../../auth/SettingsContext';
 
 const SESSION: Session = {
   user: { id: 'pac-1', email: 'ana@ejemplo.ec' },
@@ -63,6 +63,7 @@ describe('SuscribirmePage (suscripción por correo y saldo de recetas)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useAuth).mockReturnValue({ session: SESSION, loading: false, refresh: async () => {} } as never);
+    vi.mocked(usePhase).mockReturnValue(true);
     vi.mocked(useSettings).mockReturnValue({
       settings: { phase2: true, admin_email: 'admin@vitgo.test' },
       loading: false,
@@ -120,6 +121,17 @@ describe('SuscribirmePage (suscripción por correo y saldo de recetas)', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Sin conexión');
     expect(window.location.href.startsWith('mailto:')).toBe(true);
+  });
+
+  it('con la fase 2 apagada solo muestra el candado con salida, sin cabecera ni datos', () => {
+    vi.mocked(usePhase).mockReturnValue(false);
+    renderPage();
+
+    expect(screen.getByTestId('fase-2-bloqueada')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Volver a mi plan' })).toHaveAttribute('href', '/mi-plan');
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Volver a la agenda' })).not.toBeInTheDocument();
+    expect(repo.getMyPatientSubscription).not.toHaveBeenCalled();
   });
 
   it('activa muestra el saldo «Te quedan 7 de 10» y deja el botón para renovar', async () => {
