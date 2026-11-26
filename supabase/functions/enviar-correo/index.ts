@@ -10,7 +10,7 @@
 // igual queda en la campana de la app.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import nodemailer from 'npm:nodemailer@6.9.16';
+import nodemailer from 'npm:nodemailer@7.0.13';
 
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
@@ -104,8 +104,9 @@ Deno.serve(async (req) => {
   const siteUrl = Deno.env.get('SITE_URL') ?? '';
   const link = rawLink ? absoluteLink(rawLink, siteUrl) : null;
   // Con Gmail el remitente debe ser la misma cuenta (SMTP_USER) o un alias verificado de ella.
-  const senderEmail = Deno.env.get('SENDER_EMAIL') || Deno.env.get('BREVO_SENDER_EMAIL') ||
-    (useSmtp ? smtpUser : '');
+  const senderEmail = useSmtp
+    ? (Deno.env.get('SENDER_EMAIL') || smtpUser)
+    : (Deno.env.get('SENDER_EMAIL') || Deno.env.get('BREVO_SENDER_EMAIL') || '');
   const senderName = Deno.env.get('SENDER_NAME') || Deno.env.get('BREVO_SENDER_NAME') || 'VITGO';
   if (!senderEmail) return json({ sent: false, reason: 'sin_remitente' });
 
@@ -122,10 +123,14 @@ Deno.serve(async (req) => {
         port,
         secure: port === 465,
         auth: { user: smtpUser, pass: smtpPass },
+        // Por debajo del límite de tiempo de la función, para que el error quede en los logs.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
       });
       await transport.sendMail({
         from: { name: senderName, address: senderEmail },
-        to: email,
+        to: { name: '', address: email },
         subject: title,
         html,
         text,

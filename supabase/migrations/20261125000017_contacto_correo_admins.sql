@@ -1,6 +1,6 @@
 -- Migración 17: cada mensaje del formulario de contacto llega por correo a las administradoras.
 -- Usa lo que ya existe: se crea un aviso (`notifications`, kind 'contacto') para cada cuenta con rol
--- admin, y el trigger de la migración 5 lo manda por correo con la Edge Function `enviar-correo` (Brevo).
+-- admin, y el trigger de la migración 5 lo manda por correo con la Edge Function `enviar-correo` (Gmail o Brevo).
 -- Los avisos de contacto se envían aunque la fase 3 esté apagada: el contacto no es parte de las fases.
 
 -- Tope global: como mucho 20 avisos de contacto por hora (entre todos los remitentes). El límite de
