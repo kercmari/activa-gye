@@ -3,23 +3,22 @@
 -- guarda los dos valores una sola vez en el SQL Editor (ver docs/entrega/CORREOS.md, paso 3):
 --   select vault.create_secret('https://<ref>.supabase.co/functions/v1', 'vitgo_functions_url');
 --   select vault.create_secret('<service_role legacy, empieza con eyJ>', 'vitgo_service_role_key');
--- Si existen los parámetros app.functions_url / app.service_role_key (local), se usan primero.
+-- Se lee primero Vault; si no tiene el valor, los parámetros app.functions_url / app.service_role_key (local).
 
 create or replace function public.email_setting(p_name text) returns text
 language plpgsql stable security definer set search_path = public as $$
 declare
-  v text := nullif(current_setting('app.' || p_name, true), '');
+  v text;
 begin
-  if v is null then
-    begin
-      select nullif(decrypted_secret, '') into v
-        from vault.decrypted_secrets where name = 'vitgo_' || p_name
-       order by created_at desc limit 1;
-    exception when others then
-      v := null; -- sin Vault: no se envían correos
-    end;
-  end if;
-  return v;
+  begin
+    select nullif(decrypted_secret, '') into v
+      from vault.decrypted_secrets where name = 'vitgo_' || p_name;
+  exception when others then
+    raise warning 'email_setting: no se pudo leer Vault: %', sqlerrm;
+    v := null;
+  end;
+  -- Vault primero; el parámetro app.* solo sirve donde Vault no tiene el valor (local).
+  return coalesce(v, nullif(current_setting('app.' || p_name, true), ''));
 end $$;
 revoke execute on function public.email_setting(text) from public, anon, authenticated;
 

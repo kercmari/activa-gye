@@ -106,8 +106,9 @@ select name, length(decrypted_secret) as largo, left(decrypted_secret, 3) as emp
 La dirección debe empezar con `htt`; la clave con `eyJ` y tener más de 200 caracteres.
 
 **Si sale el error `duplicate key … secrets_name_idx`**, ese valor ya estaba guardado: no vuelvas a
-usar `create_secret` con ese nombre. Si solo falló una de las dos líneas, ejecuta solo la otra.
-Para corregir un valor guardado, reemplázalo (cambia el nombre si lo que corriges es la dirección):
+usar `create_secret` con ese nombre. Ejecuta solo la línea que todavía no está guardada (compruébalo
+con la consulta de arriba). Para corregir un valor guardado, reemplázalo ejecutando **solo la línea**
+del valor que corriges:
 
 ```sql
 select vault.update_secret((select id from vault.secrets where name = 'vitgo_service_role_key'), '<clave nueva>');

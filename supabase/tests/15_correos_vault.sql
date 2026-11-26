@@ -1,6 +1,6 @@
 -- La dirección y la clave de los correos se leen de Supabase Vault (26/11/2026).
 begin;
-select plan(5);
+select plan(7);
 
 update public.app_settings set phase1 = true, phase3 = false where id = 1;
 create temp table cola0 as select count(*)::int n from net.http_request_queue;
@@ -21,10 +21,18 @@ select ok((select bool_or(url = 'http://127.0.0.1:9/functions/v1/enviar-correo'
                           and headers->>'Authorization' = 'Bearer clave-de-prueba')
              from net.http_request_queue), 'usa la dirección y la clave guardadas en Vault');
 
+select public.notify('00000000-0000-4000-8000-000000000001', 'otro', 'Otro aviso', null, null);
+select is((select count(*)::int from net.http_request_queue), (select n from cola0) + 1,
+          'con la fase 3 apagada, otro aviso no pide correo aunque Vault esté configurado');
+
 -- 3. Los clientes no pueden leer la configuración.
 set local role authenticated;
 select throws_ok($$ select public.email_setting('service_role_key') $$, '42501', null,
   'email_setting no se llama desde el cliente');
+reset role;
+set local role anon;
+select throws_ok($$ select public.email_setting('service_role_key') $$, '42501', null,
+  'email_setting no se llama sin cuenta');
 reset role;
 
 select * from finish();
