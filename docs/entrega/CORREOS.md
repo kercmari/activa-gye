@@ -89,18 +89,33 @@ select vault.create_secret('https://<ref-del-proyecto>.supabase.co/functions/v1'
 select vault.create_secret('<clave service_role>', 'vitgo_service_role_key');
 ```
 
+- Cambia cada `<…>` **incluidos los signos `<` y `>`**, y deja las comillas simples `'…'`.
 - `<ref-del-proyecto>`: el *Project ID* de *Project Settings → General*.
 - `<clave service_role>`: **la clave antigua (legacy)**, en *Project Settings → API Keys → Legacy API
-  keys → service_role*. Empieza con `eyJ` y es muy larga. **No** uses la nueva `sb_secret_…` ni la
-  contraseña de Gmail: con otra clave la función responde 401 («No autorizado») y no sale ningún correo.
+  keys → service_role* (si no se ve, pulsa *Reveal*; si la pestaña está apagada, actívala). Empieza
+  con `eyJ` y es muy larga. **No** uses la nueva `sb_secret_…` ni la contraseña de Gmail: con otra
+  clave la función responde 401 («No autorizado») y no sale ningún correo.
 
-Para comprobarlo (muestra solo los nombres, no las claves):
-`select name, created_at from vault.secrets where name like 'vitgo_%';`
+Para comprobarlo sin mostrar la clave:
+
+```sql
+select name, length(decrypted_secret) as largo, left(decrypted_secret, 3) as empieza
+  from vault.decrypted_secrets where name like 'vitgo_%';
+```
+
+La dirección debe empezar con `htt`; la clave con `eyJ` y tener más de 200 caracteres.
+
+**Si sale el error `duplicate key … secrets_name_idx`**, ese valor ya estaba guardado: no vuelvas a
+usar `create_secret` con ese nombre. Si solo falló una de las dos líneas, ejecuta solo la otra.
+Para corregir un valor guardado, reemplázalo (cambia el nombre si lo que corriges es la dirección):
+
+```sql
+select vault.update_secret((select id from vault.secrets where name = 'vitgo_service_role_key'), '<clave nueva>');
+select vault.update_secret((select id from vault.secrets where name = 'vitgo_functions_url'), '<dirección nueva>');
+```
 
 Notas:
-- No pegues la clave en el código ni en el repositorio.
-- Si te equivocas o cambias la clave, guarda otra con el mismo nombre usando
-  `select vault.update_secret((select id from vault.secrets where name = 'vitgo_service_role_key'), '<clave nueva>');`
+- No pegues la clave en el código, en el repositorio ni en chats.
 - Sin estos dos valores, el trigger no hace nada (no es un error).
 
 ## Paso 4. Revisar que funcione
