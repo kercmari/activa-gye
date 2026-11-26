@@ -50,13 +50,32 @@ const renderHtml = (title: string, body: string | null, link: string | null, sit
 </body></html>`;
 };
 
+// true si el token es un JWT (ya verificado por la puerta) con rol service_role de este proyecto.
+const isServiceRoleJwt = (token: string) => {
+  const parts = token.split('.');
+  if (parts.length !== 3) return false;
+  try {
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)));
+    const host = new URL(Deno.env.get('SUPABASE_URL') ?? '').hostname;
+    const ref = host.split('.')[0];
+    return payload?.role === 'service_role' && typeof payload?.ref === 'string' && payload.ref === ref;
+  } catch {
+    return false;
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Método no permitido' }, 405);
 
   const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
   const auth = req.headers.get('Authorization') ?? '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
   // Solo la base de datos (trigger) o quien tenga la clave de servicio puede disparar correos.
-  if (!serviceRole || auth !== `Bearer ${serviceRole}`) {
+  // En proyectos nuevos SUPABASE_SERVICE_ROLE_KEY puede no ser la clave legacy que guarda Vault,
+  // así que también vale un JWT con rol service_role de este proyecto. La firma la comprueba la
+  // puerta de Supabase antes de llegar aquí (verify_jwt = true en supabase/config.toml).
+  if (!bearer || !((serviceRole && bearer === serviceRole) || isServiceRoleJwt(bearer))) {
     return json({ error: 'No autorizado' }, 401);
   }
 
