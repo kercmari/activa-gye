@@ -1,11 +1,16 @@
-// Edge Function: envía un correo de aviso con Brevo (fase 3, y los de contacto siempre).
+// Edge Function: envía un correo de aviso (fase 3, y los de contacto siempre).
+// Dos formas de enviar, la primera que esté configurada:
+//   1. SMTP (por ejemplo Gmail con contraseña de aplicación): SMTP_HOST, SMTP_USER, SMTP_PASS
+//      y opcional SMTP_PORT (465 por defecto; Supabase bloquea la salida por los puertos 25 y 587).
+//   2. API de Brevo: BREVO_API_KEY.
 // La llama el trigger de `notifications` (migración 20261121000005) con la clave de servicio.
 // Los avisos de contacto (kind 'contacto', migración 20261125000017) van a las administradoras
 // aunque la fase 3 esté apagada.
-// Sin BREVO_API_KEY no envía nada: responde 200 { sent: false, reason: 'sin_clave' } y el aviso
+// Sin ninguna de las dos no envía nada: responde 200 { sent: false, reason: 'sin_clave' } y el aviso
 // igual queda en la campana de la app.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import nodemailer from 'npm:nodemailer@6.9.16';
 
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
@@ -71,8 +76,12 @@ Deno.serve(async (req) => {
   const isContact = input.kind === 'contacto';
   const rawLink = typeof input.link === 'string' && input.link.trim() ? input.link.trim() : null;
 
+  const smtpHost = Deno.env.get('SMTP_HOST') ?? '';
+  const smtpUser = Deno.env.get('SMTP_USER') ?? '';
+  const smtpPass = Deno.env.get('SMTP_PASS') ?? '';
+  const useSmtp = Boolean(smtpHost && smtpUser && smtpPass);
   const apiKey = Deno.env.get('BREVO_API_KEY') ?? '';
-  if (!apiKey) return json({ sent: false, reason: 'sin_clave' });
+  if (!useSmtp && !apiKey) return json({ sent: false, reason: 'sin_clave' });
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const admin = createClient(supabaseUrl, serviceRole, {
@@ -94,9 +103,41 @@ Deno.serve(async (req) => {
 
   const siteUrl = Deno.env.get('SITE_URL') ?? '';
   const link = rawLink ? absoluteLink(rawLink, siteUrl) : null;
-  const senderEmail = Deno.env.get('BREVO_SENDER_EMAIL') ?? '';
-  const senderName = Deno.env.get('BREVO_SENDER_NAME') ?? 'VITGO';
+  // Con Gmail el remitente debe ser la misma cuenta (SMTP_USER) o un alias verificado de ella.
+  const senderEmail = Deno.env.get('SENDER_EMAIL') || Deno.env.get('BREVO_SENDER_EMAIL') ||
+    (useSmtp ? smtpUser : '');
+  const senderName = Deno.env.get('SENDER_NAME') || Deno.env.get('BREVO_SENDER_NAME') || 'VITGO';
   if (!senderEmail) return json({ sent: false, reason: 'sin_remitente' });
+
+  const html = renderHtml(title, body, link, siteUrl, isContact
+    ? 'Recibiste este correo porque eres administradora de VITGO.'
+    : 'Recibiste este correo porque tienes una cuenta en VITGO.');
+  const text = [title, body, link].filter(Boolean).join('\n\n');
+
+  if (useSmtp) {
+    const port = Number(Deno.env.get('SMTP_PORT') ?? '465') || 465;
+    try {
+      const transport = nodemailer.createTransport({
+        host: smtpHost,
+        port,
+        secure: port === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+      await transport.sendMail({
+        from: { name: senderName, address: senderEmail },
+        to: email,
+        subject: title,
+        html,
+        text,
+      });
+    } catch (err) {
+      // Solo el código del error: el mensaje puede traer el correo del destinatario.
+      console.error('SMTP falló', (err as { code?: string; responseCode?: number })?.code ?? 'sin_codigo',
+        (err as { responseCode?: number })?.responseCode ?? '');
+      return json({ sent: false, reason: 'smtp_error' }, 502);
+    }
+    return json({ sent: true });
+  }
 
   const brevo = await fetch(BREVO_URL, {
     method: 'POST',
@@ -109,10 +150,8 @@ Deno.serve(async (req) => {
       sender: { name: senderName, email: senderEmail },
       to: [{ email }],
       subject: title,
-      htmlContent: renderHtml(title, body, link, siteUrl, isContact
-        ? 'Recibiste este correo porque eres administradora de VITGO.'
-        : 'Recibiste este correo porque tienes una cuenta en VITGO.'),
-      textContent: [title, body, link].filter(Boolean).join('\n\n'),
+      htmlContent: html,
+      textContent: text,
     }),
   });
 
