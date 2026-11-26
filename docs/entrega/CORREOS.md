@@ -80,27 +80,28 @@ npx supabase functions deploy enviar-correo
 
 ## Paso 3. Decirle a la base dónde está la función
 
-El trigger necesita la dirección de las funciones y la clave de servicio. Una sola vez, en el
-*SQL Editor* del panel de Supabase, como el usuario `postgres`:
+El trigger necesita la dirección de las funciones y la clave de servicio. Se guardan cifradas en
+**Supabase Vault** (en la nube `alter database … set app.*` no está permitido). Una sola vez, en el
+*SQL Editor* del panel de Supabase:
 
 ```sql
-alter database postgres set app.functions_url = 'https://<ref-del-proyecto>.supabase.co/functions/v1';
-alter database postgres set app.service_role_key = '<clave service_role>';
+select vault.create_secret('https://<ref-del-proyecto>.supabase.co/functions/v1', 'vitgo_functions_url');
+select vault.create_secret('<clave service_role>', 'vitgo_service_role_key');
 ```
 
 - `<ref-del-proyecto>`: el *Project ID* de *Project Settings → General*.
 - `<clave service_role>`: **la clave antigua (legacy)**, en *Project Settings → API Keys → Legacy API
-  keys → service_role*. Empieza con `eyJ`. **No** uses la nueva `sb_secret_…`: con esa la función
-  responde 401 («No autorizado») y no sale ningún correo.
+  keys → service_role*. Empieza con `eyJ` y es muy larga. **No** uses la nueva `sb_secret_…` ni la
+  contraseña de Gmail: con otra clave la función responde 401 («No autorizado») y no sale ningún correo.
 
-Para comprobar que quedó guardado, abre otra pestaña del *SQL Editor* y ejecuta
-`select current_setting('app.functions_url', true);` (debe mostrar la dirección).
+Para comprobarlo (muestra solo los nombres, no las claves):
+`select name, created_at from vault.secrets where name like 'vitgo_%';`
 
 Notas:
-- La clave `service_role` queda guardada en la configuración de la base. Solo la pueden leer
-  quienes administran la base. No la pegues en el código ni en el repositorio.
-- Si cambias la clave, vuelve a ejecutar la segunda línea.
-- Sin estas dos líneas, el trigger no hace nada (no es un error).
+- No pegues la clave en el código ni en el repositorio.
+- Si te equivocas o cambias la clave, guarda otra con el mismo nombre usando
+  `select vault.update_secret((select id from vault.secrets where name = 'vitgo_service_role_key'), '<clave nueva>');`
+- Sin estos dos valores, el trigger no hace nada (no es un error).
 
 ## Paso 4. Revisar que funcione
 
@@ -112,7 +113,7 @@ Notas:
 
 Si no llega (revisa también *Spam*):
 - En el *SQL Editor*: `select status_code, content from net._http_response order by created desc limit 5;`
-  muestra la respuesta de la función. `401` = clave del paso 3 equivocada. Si no, el `reason` dice el
+  muestra la respuesta de la función. `401` = clave del paso 3 equivocada (corrígela con `vault.update_secret`). Si no, el `reason` dice el
   motivo: `sin_clave`, `fase_apagada`, `sin_correo`, `sin_remitente`, `error_configuracion`,
   `smtp_error`, `brevo_error`.
 - Con `smtp_error`, en *Edge Functions → enviar-correo → Logs* aparece el código: `EAUTH`
