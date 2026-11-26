@@ -78,6 +78,8 @@ publicar la migración 17, vuelve a desplegarla:
 npx supabase functions deploy enviar-correo
 ```
 
+No la despliegues con `--no-verify-jwt` ni apagues su verificación de JWT en el panel.
+
 ## Paso 3. Decirle a la base dónde está la función
 
 El trigger necesita la dirección de las funciones y la clave de servicio. Se guardan cifradas en

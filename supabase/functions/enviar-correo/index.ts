@@ -59,7 +59,9 @@ const isServiceRoleJwt = (token: string) => {
     const payload = JSON.parse(atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4)));
     const host = new URL(Deno.env.get('SUPABASE_URL') ?? '').hostname;
     const ref = host.split('.')[0];
-    return payload?.role === 'service_role' && typeof payload?.ref === 'string' && payload.ref === ref;
+    const vigente = typeof payload?.exp !== 'number' || payload.exp * 1000 > Date.now();
+    return payload?.role === 'service_role' && payload?.iss === 'supabase' && vigente &&
+      typeof payload?.ref === 'string' && payload.ref === ref;
   } catch {
     return false;
   }
@@ -74,7 +76,8 @@ Deno.serve(async (req) => {
   // Solo la base de datos (trigger) o quien tenga la clave de servicio puede disparar correos.
   // En proyectos nuevos SUPABASE_SERVICE_ROLE_KEY puede no ser la clave legacy que guarda Vault,
   // así que también vale un JWT con rol service_role de este proyecto. La firma la comprueba la
-  // puerta de Supabase antes de llegar aquí (verify_jwt = true en supabase/config.toml).
+  // puerta de Supabase antes de llegar aquí (verify_jwt = true en supabase/config.toml) y otra vez
+  // Supabase Auth al pedir el usuario con esa misma clave (más abajo).
   if (!bearer || !((serviceRole && bearer === serviceRole) || isServiceRoleJwt(bearer))) {
     return json({ error: 'No autorizado' }, 401);
   }
@@ -103,7 +106,10 @@ Deno.serve(async (req) => {
   if (!useSmtp && !apiKey) return json({ sent: false, reason: 'sin_clave' });
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-  const admin = createClient(supabaseUrl, serviceRole, {
+  // Se usa la clave que llegó: así Supabase Auth vuelve a comprobar su firma en getUserById, aunque
+  // algún día se despliegue la función sin verify_jwt (un token falso termina en 'sin_correo').
+  const adminKey = serviceRole && bearer === serviceRole ? serviceRole : bearer;
+  const admin = createClient(supabaseUrl, adminKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
