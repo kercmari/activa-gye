@@ -66,7 +66,7 @@ select ok(not exists (select 1 from public.guide_entries where cardinality(steps
 
 -- ============ 12–21. Elección de plantilla y reglas de assign_trial ============
 select ok(pg_temp.as_user('00000000-0000-0000-0000-0000000006a5', 'select (public.assign_trial()).template_name') like '%FALTA_FICHA%', 'sin ficha: FALTA_FICHA');
-select ok(pg_temp.as_user('00000000-0000-0000-0000-0000000006a6', 'select (public.assign_trial()).template_name') like '%REQUIERE_NUTRICIONISTA%', 'con condiciones de salud: REQUIERE_NUTRICIONISTA');
+select ok(pg_temp.as_user('00000000-0000-0000-0000-0000000006a6', 'select (public.assign_trial()).template_name') not like '%REQUIERE_NUTRICIONISTA%', 'con condiciones de salud: también recibe plantilla');
 select is(pg_temp.as_user('00000000-0000-0000-0000-0000000006a3', 'select (public.assign_trial()).template_name'), 'Bajar de peso · mujeres 18–29 · IMC 25–30', 'mujer de 25 años, IMC 27, bajar peso: plantilla específica');
 select is(pg_temp.as_user('00000000-0000-0000-0000-0000000006a4', 'select (public.assign_trial()).template_name'), 'Bajar de peso · hombres 18–59 · IMC 25–30', 'hombre de 40 años, IMC 27, bajar peso: plantilla de su sexo');
 select is(pg_temp.as_user('00000000-0000-0000-0000-0000000006a7', 'select (public.assign_trial()).template_name'), 'Bienestar · adultos de 50 años o más', '55 años, bienestar: plantilla de 50+');

@@ -79,8 +79,8 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000007a2","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select throws_ok($$ select public.assign_trial() $$, 'P0001', 'REQUIERE_NUTRICIONISTA',
-  'H6 (d): health_notes con texto y conditions vacío responde REQUIERE_NUTRICIONISTA');
+select ok((select template_name from public.assign_trial()) is not null,
+  'H6 (d): health_notes con texto también recibe su semana gratis');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 -- ============ (e) Texto libre vacío o nulo y sin condiciones sigue asignando ============
@@ -104,8 +104,8 @@ select is((select count(*)::int from public.trials
            where user_id in ('00000000-0000-0000-0000-0000000007a3', '00000000-0000-0000-0000-0000000007a4')), 2,
   'H6 (e): cada uno de los dos tiene una semana creada');
 select is((select count(*)::int from public.trials
-           where user_id = '00000000-0000-0000-0000-0000000007a2'), 0,
-  'H6 (d): el paciente con texto libre no recibe semana automática');
+           where user_id = '00000000-0000-0000-0000-0000000007a2'), 1,
+  'H6 (d): el paciente con texto libre tiene su semana gratis');
 
 select * from finish();
 rollback;

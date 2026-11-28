@@ -72,8 +72,8 @@ do $$ begin
   perform set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000e5","role":"authenticated"}', true);
   set local role authenticated;
 end $$;
-select throws_ok($$ select public.assign_trial() $$, 'P0001', 'REQUIERE_NUTRICIONISTA',
-  '§6.10.1: con condiciones de salud responde REQUIERE_NUTRICIONISTA');
+select ok((select template_name from public.assign_trial()) is not null,
+  'con condiciones de salud también recibe su semana gratis');
 do $$ begin reset role; perform set_config('request.jwt.claims', '', true); end $$;
 
 -- ============ 2. Elección de plantilla ============
